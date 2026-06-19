@@ -1,58 +1,122 @@
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authService } from '@/services/authService';
-import type { LoginCredentials, RegisterData, User } from '@/types';
+import { storage } from '@/utils/storage';
 
-interface AuthContextValue {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<User>;
-  register: (data: RegisterData) => Promise<User>;
-  logout: () => Promise<void>;
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'learner' | 'tutor' | 'admin';
+  avatar?: string;
 }
 
-export const AuthContext = createContext<AuthContextValue | null>(null);
+interface AuthContextType {
+  user: AuthUser | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role?: 'learner' | 'tutor') => Promise<{ email: string }>;
+  verifyEmail: (email: string, otp: string) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (updates: Partial<AuthUser>) => void;
+}
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = authService.getCurrentUser();
-    if (stored && authService.isAuthenticated()) {
-      setUser(stored);
-    }
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      const token = storage.getAccessToken();
+      const refreshToken = storage.getRefreshToken();
+      const storedUser = storage.getUser<AuthUser>();
+
+      if (token && storedUser) {
+        setUser(storedUser);
+      }
+
+      if (!token && refreshToken) {
+        try {
+          const data = await authService.refreshToken(refreshToken);
+          storage.setAccessToken(data.accessToken);
+          const me = await authService.me();
+          storage.setUser(me);
+          setUser(me);
+        } catch {
+          storage.clearAuth();
+          setUser(null);
+        }
+      }
+
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = useCallback(async (credentials: LoginCredentials) => {
-    const { user: loggedInUser } = await authService.login(credentials);
-    setUser(loggedInUser);
-    return loggedInUser;
-  }, []);
+  const login = async (email: string, password: string) => {
+    const data = await authService.login({ email, password });
+    storage.setAccessToken(data.accessToken);
+    storage.setRefreshToken(data.refreshToken);
+    storage.setUser(data.user);
+    setUser(data.user);
+  };
 
-  const register = useCallback(async (data: RegisterData) => {
-    const { user: newUser } = await authService.register(data);
-    setUser(newUser);
-    return newUser;
-  }, []);
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: 'learner' | 'tutor' = 'learner'
+  ) => {
+    const data = await authService.register({ name, email, password, role });
+    return { email: data.email };
+  };
 
-  const logout = useCallback(async () => {
+  const verifyEmail = async (email: string, otp: string) => {
+    const data = await authService.verifyEmail(email, otp);
+    storage.setAccessToken(data.accessToken);
+    storage.setRefreshToken(data.refreshToken);
+    storage.setUser(data.user);
+    setUser(data.user);
+  };
+
+  const logout = async () => {
     await authService.logout();
+    storage.clearAuth();
     setUser(null);
-  }, []);
+  };
 
-  const value = useMemo(
-    () => ({
-      user,
-      isLoading,
-      isAuthenticated: !!user,
-      login,
-      register,
-      logout,
-    }),
-    [user, isLoading, login, register, logout],
+  const updateUser = (updates: Partial<AuthUser>) => {
+    if (!user) return;
+    const updated = { ...user, ...updates };
+    setUser(updated);
+    storage.setUser(updated);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        register,
+        verifyEmail,
+        logout,
+        updateUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
+};
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+export const useAuthContext = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuthContext must be used within AuthProvider');
+  return ctx;
+};
+
+export default AuthContext;

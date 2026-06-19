@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, BookOpen, DollarSign, Star } from 'lucide-react';
+import { Users, BookOpen, Star } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { LineChart } from '@/components/charts/LineChart';
@@ -31,7 +31,7 @@ export function TutorDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Students" value={analytics.totalStudents.toLocaleString()} icon={Users} iconColor="bg-blue-100 text-blue-600 dark:bg-blue-900/30" change="+12% this month" trend="up" />
         <StatCard title="Active Courses" value={analytics.activeCourses} icon={BookOpen} iconColor="bg-violet-100 text-violet-600 dark:bg-violet-900/30" />
-        <StatCard title="Revenue" value={`$${analytics.totalRevenue.toLocaleString()}`} icon={DollarSign} iconColor="bg-green-100 text-green-600 dark:bg-green-900/30" change="+8% this month" trend="up" />
+        
         <StatCard title="Avg Rating" value={analytics.avgRating} icon={Star} iconColor="bg-amber-100 text-amber-600 dark:bg-amber-900/30" />
       </div>
 

@@ -1,42 +1,74 @@
-import {
-  mockLiveClasses,
-  mockProgress,
-  mockStudentPerformance,
-  mockTutorAnalytics,
-  mockAdminStats,
-  mockConversations,
-} from './mockData';
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { api } from './api';
 
 export const progressService = {
+  // Get learner's full progress (XP, streak, badges, enrollments)
   async getLearnerProgress() {
-    await delay(500);
-    return mockProgress;
+    const { data } = await api.get('/progress/learner');
+    return data;
   },
 
+  // Mark a lesson as complete
+  async completeLesson(courseId: string, lessonId: string) {
+    const { data } = await api.post('/progress/complete-lesson', { courseId, lessonId });
+    return data; // { xp, streak, progress, badges }
+  },
+
+  // Get progress for a specific course
+  async getCourseProgress(courseId: string) {
+    const { data } = await api.get(`/progress/course/${courseId}`);
+    return data; // { completedLessons[], progress%, xp }
+  },
+
+  // Tutor analytics (student performance across their courses)
   async getTutorAnalytics() {
-    await delay(500);
-    return mockTutorAnalytics;
+    const { data } = await api.get('/progress/tutor/analytics');
+    return data;
   },
 
+  // Admin platform-wide stats
   async getAdminStats() {
-    await delay(500);
-    return mockAdminStats;
+    const { data } = await api.get('/progress/admin/stats');
+    return data;
+  },
+
+  // Submit a quiz result
+  async submitQuiz(courseId: string, lessonId: string, score: number) {
+    const { data } = await api.post('/progress/quiz', { courseId, lessonId, score });
+    return data; // { passed, badge? }
   },
 
   async getConversations() {
-    await delay(400);
-    return mockConversations;
-  },
-
-  async getStudentPerformance() {
-    await delay(500);
-    return mockStudentPerformance;
+    const { data } = await api.get('/messages');
+    return data.map((conversation: any) => {
+      const messages = conversation.messages ?? [];
+      const last = messages[messages.length - 1];
+      return {
+        id: conversation._id,
+        participantName: conversation.participantName ?? 'Conversation',
+        participantAvatar: conversation.participantAvatar,
+        lastMessage: last?.content ?? 'No messages yet',
+        lastMessageTime: last?.timestamp ?? conversation.updatedAt,
+        unreadCount: messages.filter((message: any) => !message.read).length,
+        messages: messages.map((message: any) => ({
+          id: message._id,
+          senderId: message.senderId,
+          senderName: message.senderName,
+          senderAvatar: message.senderAvatar,
+          content: message.content,
+          timestamp: message.timestamp ?? message.createdAt,
+          read: message.read,
+        })),
+      };
+    });
   },
 
   async getLiveClasses() {
-    await delay(400);
-    return mockLiveClasses;
+    const { data } = await api.get('/progress/tutor/live-classes');
+    return data;
+  },
+
+  async getStudentPerformance() {
+    const { data } = await api.get('/progress/tutor/students');
+    return data;
   },
 };

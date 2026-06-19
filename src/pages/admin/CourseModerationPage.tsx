@@ -17,13 +17,13 @@ export function CourseModerationPage() {
   }, []);
 
   const handleApprove = async (id: string) => {
-    await courseService.updateCourseStatus(id, 'published');
+    await courseService.moderateCourse(id, 'approve');
     setCourses(courses.filter((c) => c.id !== id));
     addToast({ title: 'Course approved', type: 'success' });
   };
 
   const handleReject = async (id: string) => {
-    await courseService.updateCourseStatus(id, 'rejected');
+    await courseService.moderateCourse(id, 'reject');
     setCourses(courses.filter((c) => c.id !== id));
     addToast({ title: 'Course rejected', type: 'warning' });
   };

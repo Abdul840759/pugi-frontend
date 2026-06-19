@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, BookOpen, Users, BarChart3, Calendar } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, BookOpen, Users, BarChart3, Calendar, Settings } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 
@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Students', path: '/tutor/students', icon: Users },
   { label: 'Analytics', path: '/tutor/analytics', icon: BarChart3 },
   { label: 'Live Classes', path: '/tutor/schedule', icon: Calendar },
+  { label: 'Settings', path: '/tutor/settings', icon: Settings },
 ];
 
 export function TutorLayout() {

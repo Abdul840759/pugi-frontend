@@ -17,7 +17,12 @@ export function CreateCoursePage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Frontend');
   const [level, setLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
-  const [modules, setModules] = useState([{ title: 'Module 1', lessons: ['Introduction'] }]);
+  const [modules, setModules] = useState([
+    {
+      title: 'Module 1',
+      lessons: [{ title: 'Introduction', content: '# Introduction\n\nStart writing your lesson content here.' }],
+    },
+  ]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,6 +36,19 @@ export function CreateCoursePage() {
         instructor: user?.name ?? 'Unknown',
         instructorId: user?.id ?? '2',
         duration: `${modules.length * 4}h`,
+        modules: modules.map((module, moduleIndex) => ({
+          title: module.title,
+          order: moduleIndex,
+          lessons: module.lessons.map((lesson, lessonIndex) => ({
+            title: lesson.title,
+            content: lesson.content,
+            markdown: lesson.content,
+            duration: '15m',
+            order: lessonIndex,
+            type: 'content',
+          })),
+        })),
+        status: 'draft',
       });
       addToast({ title: 'Course created!', message: 'Your course has been saved as a draft', type: 'success' });
       navigate('/tutor/courses');
@@ -42,7 +60,22 @@ export function CreateCoursePage() {
   };
 
   const addModule = () => {
-    setModules([...modules, { title: `Module ${modules.length + 1}`, lessons: ['New Lesson'] }]);
+    setModules([
+      ...modules,
+      {
+        title: `Module ${modules.length + 1}`,
+        lessons: [{ title: 'New Lesson', content: '# New Lesson\n\nAdd lesson content here.' }],
+      },
+    ]);
+  };
+
+  const addLesson = (moduleIndex: number) => {
+    const updated = [...modules];
+    updated[moduleIndex].lessons.push({
+      title: `Lesson ${updated[moduleIndex].lessons.length + 1}`,
+      content: '# New Lesson\n\nAdd lesson content here.',
+    });
+    setModules(updated);
   };
 
   return (
@@ -124,6 +157,35 @@ export function CreateCoursePage() {
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   )}
+                </div>
+                <div className="mt-4 space-y-3">
+                  {mod.lessons.map((lesson, lessonIndex) => (
+                    <div key={lessonIndex} className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+                      <Input
+                        label="Lesson title"
+                        value={lesson.title}
+                        onChange={(e) => {
+                          const updated = [...modules];
+                          updated[i].lessons[lessonIndex].title = e.target.value;
+                          setModules(updated);
+                        }}
+                      />
+                      <label className="mb-1.5 mt-3 block text-sm font-medium">Markdown content</label>
+                      <textarea
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+                        rows={5}
+                        value={lesson.content}
+                        onChange={(e) => {
+                          const updated = [...modules];
+                          updated[i].lessons[lessonIndex].content = e.target.value;
+                          setModules(updated);
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={() => addLesson(i)}>
+                    <Plus className="h-4 w-4" /> Add Lesson
+                  </Button>
                 </div>
               </div>
             ))}

@@ -17,13 +17,13 @@ export function TutorApprovalPage() {
   }, []);
 
   const handleApprove = async (id: string) => {
-    await userService.approveTutor(id);
+    await userService.moderateTutor(id, 'approve');
     setTutors(tutors.filter((t) => t.id !== id));
     addToast({ title: 'Tutor approved', type: 'success' });
   };
 
   const handleReject = async (id: string) => {
-    await userService.rejectTutor(id);
+    await userService.moderateTutor(id, 'reject');
     setTutors(tutors.filter((t) => t.id !== id));
     addToast({ title: 'Tutor rejected', type: 'warning' });
   };

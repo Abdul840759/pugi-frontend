@@ -4,6 +4,7 @@ import type { Toast } from '@/types';
 interface ToastContextValue {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => void;
+  showToast: (toast: Omit<Toast, 'id'> | string, type?: Toast['type']) => void;
   removeToast: (id: string) => void;
 }
 
@@ -22,7 +23,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => removeToast(id), 4000);
   }, [removeToast]);
 
-  const value = useMemo(() => ({ toasts, addToast, removeToast }), [toasts, addToast, removeToast]);
+  const showToast = useCallback((toast: Omit<Toast, 'id'> | string, type: Toast['type'] = 'info') => {
+    addToast(typeof toast === 'string' ? { title: toast, type } : toast);
+  }, [addToast]);
+
+  const value = useMemo(() => ({ toasts, addToast, showToast, removeToast }), [toasts, addToast, showToast, removeToast]);
 
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
 }

@@ -1,78 +1,64 @@
-import type { AuthResponse, LoginCredentials, RegisterData } from '@/types';
-import { mockUsers } from './mockData';
-import { storage } from '@/utils/storage';
+import { api } from './api';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
 
-function generateToken(userId: string): string {
-  return `mock_jwt_${userId}_${Date.now()}`;
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  role?: 'learner' | 'tutor';
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  token: string;
+  newPassword: string;
 }
 
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    await delay(800);
+  async login(payload: LoginPayload) {
+    const { data } = await api.post('/auth/login', payload);
+    return data;
+  },
 
-    const user = mockUsers.find(
-      (u) => u.email === credentials.email,
-    );
+  async register(payload: RegisterPayload) {
+    const { data } = await api.post('/auth/register', payload);
+    return data;
+  },
 
-    if (!user || credentials.password !== 'password123') {
-      throw new Error('Invalid email or password');
+  async logout() {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // fail silently
     }
-
-    const tokens = {
-      accessToken: generateToken(user.id),
-      refreshToken: generateToken(`${user.id}_refresh`),
-    };
-
-    storage.setAccessToken(tokens.accessToken);
-    storage.setRefreshToken(tokens.refreshToken);
-    storage.setUser(user);
-
-    return { user, tokens };
   },
 
-  async register(data: RegisterData): Promise<AuthResponse> {
-    await delay(1000);
-
-    const existing = mockUsers.find((u) => u.email === data.email);
-    if (existing) {
-      throw new Error('Email already registered');
-    }
-
-    const user = {
-      id: String(mockUsers.length + 1),
-      email: data.email,
-      name: data.name,
-      role: data.role,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    mockUsers.push(user);
-
-    const tokens = {
-      accessToken: generateToken(user.id),
-      refreshToken: generateToken(`${user.id}_refresh`),
-    };
-
-    storage.setAccessToken(tokens.accessToken);
-    storage.setRefreshToken(tokens.refreshToken);
-    storage.setUser(user);
-
-    return { user, tokens };
+  async refreshToken(refreshToken: string) {
+    const { data } = await api.post('/auth/refresh', { refreshToken });
+    return data;
   },
 
-  async logout(): Promise<void> {
-    await delay(300);
-    storage.clearAuth();
+  async verifyEmail(email: string, otp: string) {
+    const { data } = await api.post('/auth/verify-email', { email, otp });
+    return data;
   },
 
-  getCurrentUser() {
-    return storage.getUser<AuthResponse['user']>();
+  async me() {
+    const { data } = await api.get('/auth/me');
+    return data;
   },
 
-  isAuthenticated(): boolean {
-    return !!storage.getAccessToken() && !!storage.getUser();
+  async forgotPassword(email: string) {
+    const { data } = await api.post('/auth/forgot-password', { email });
+    return data;
+  },
+
+  async resetPassword(payload: ResetPasswordPayload) {
+    const { data } = await api.post('/auth/reset-password', payload);
+    return data;
   },
 };

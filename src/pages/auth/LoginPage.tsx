@@ -1,91 +1,142 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/useAuth';
+import { Mail, Lock, Zap } from 'lucide-react';
+import { useAuthContext } from '@/context/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { ROLE_DASHBOARD_PATH, DEMO_USERS } from '@/utils/constants';
+import { Button } from '@/components/ui/Button';
+
+const DEMO_USERS = [
+  { label: 'Learner', email: 'learner@pugi.com', password: 'password123' },
+  { label: 'Tutor',   email: 'tutor@pugi.com',   password: 'password123' },
+  { label: 'Admin',   email: 'admin@pugi.com',    password: 'password123' },
+];
+
+const ROLE_PATH: Record<string, string> = {
+  learner: '/learner/dashboard',
+  tutor:   '/tutor/dashboard',
+  admin:   '/admin/dashboard',
+};
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const { addToast } = useToast();
+  const { login } = useAuthContext();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = async (e?: React.FormEvent, overrideEmail?: string, overridePassword?: string) => {
+    e?.preventDefault();
+    setError('');
+    const finalEmail = overrideEmail ?? email;
+    const finalPassword = overridePassword ?? password;
+
+    if (!finalEmail || !finalPassword) {
+      setError('Please enter your email and password');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const user = await login({ email, password });
-      addToast({ title: 'Welcome back!', message: `Logged in as ${user.name}`, type: 'success' });
-      navigate(ROLE_DASHBOARD_PATH[user.role]);
-    } catch (err) {
-      addToast({ title: 'Login failed', message: err instanceof Error ? err.message : 'Invalid credentials', type: 'error' });
+      await login(finalEmail, finalPassword);
+      showToast('Welcome back!', 'success');
+      // login() updates context user synchronously via setUser before resolving,
+      // but to be 100% safe we read directly from the just-returned promise chain
+      const path = ROLE_PATH[JSON.parse(localStorage.getItem('pugi_user') || '{}').role] || '/learner/dashboard';
+      navigate(path, { replace: true });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Login failed';
+      setError(msg);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const fillDemo = (role: 'learner' | 'tutor' | 'admin') => {
-    const demo = DEMO_USERS.find((u) => u.role === role);
-    if (demo) {
-      setEmail(demo.email);
-      setPassword(demo.password);
-    }
+  const handleDemo = (demoEmail: string, demoPassword: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    handleLogin(undefined, demoEmail, demoPassword);
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome back</h1>
-          <p className="mt-2 text-slate-500">Sign in to your PUGI account</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 mb-2">
+            <Zap className="text-blue-500" size={32} />
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">PUGI</span>
+          </div>
+          <p className="text-gray-500 dark:text-gray-400">Sign in to your account</p>
         </div>
 
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+          <form onSubmit={handleLogin} className="space-y-4">
             <Input
-              id="email"
               label="Email"
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              leftIcon={<Mail size={16} />}
+              disabled={loading}
             />
             <Input
-              id="password"
               label="Password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              leftIcon={<Lock size={16} />}
+              disabled={loading}
             />
-            <Button type="submit" className="w-full" isLoading={isLoading}>
-              Sign In
+
+            {error && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
-            <p className="mb-3 text-center text-xs text-slate-500">Demo accounts (password: password123)</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => fillDemo('learner')}>Learner</Button>
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => fillDemo('tutor')}>Tutor</Button>
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => fillDemo('admin')}>Admin</Button>
+          <div className="mt-6">
+            <p className="text-xs text-center text-gray-400 mb-3">Quick demo access</p>
+            <div className="grid grid-cols-3 gap-2">
+              {DEMO_USERS.map((u) => (
+                <button
+                  key={u.label}
+                  onClick={() => handleDemo(u.email, u.password)}
+                  disabled={loading}
+                  className="text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-600
+                             text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20
+                             hover:border-blue-300 hover:text-blue-600 transition-colors disabled:opacity-50"
+                >
+                  {u.label}
+                </button>
+              ))}
             </div>
           </div>
-        </Card>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          Don&apos;t have an account?{' '}
-          <Link to="/register" className="font-medium text-primary-600 hover:text-primary-700">Sign up</Link>
-        </p>
-      </motion.div>
+          <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400 space-y-2">
+            <p>
+              Don't have an account?{' '}
+              <Link to="/register" className="text-blue-500 hover:underline font-medium">
+                Sign up
+              </Link>
+            </p>
+            <p>
+              <Link to="/forgot-password" className="text-blue-500 hover:underline font-medium">
+                Forgot password?
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

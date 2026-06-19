@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Users } from 'lucide-react';
+import { Plus, Edit, Users, Send, FileText, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { courseService } from '@/services/courseService';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/useToast';
 import type { Course } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -18,16 +19,45 @@ const statusColors: Record<Course['status'], string> = {
 
 export function ManageCoursesPage() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      courseService.getTutorCourses(user.id).then(setCourses).finally(() => setLoading(false));
+      courseService.getTutorCourses().then(setCourses).finally(() => setLoading(false));
     }
   }, [user]);
 
   if (loading) return <Loader fullScreen />;
+
+  const updateStatus = async (courseId: string, status: 'draft' | 'pending') => {
+    setBusyId(courseId);
+    try {
+      const updated = await courseService.updateCourseStatus(courseId, status);
+      setCourses((current) => current.map((course) => course.id === courseId ? updated : course));
+      addToast({
+        title: status === 'pending' ? 'Course submitted for review' : 'Course moved to draft',
+        type: 'success',
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const deleteCourse = async (courseId: string) => {
+    const confirmed = window.confirm('Delete this course? This cannot be undone.');
+    if (!confirmed) return;
+    setBusyId(courseId);
+    try {
+      await courseService.deleteCourse(courseId);
+      setCourses((current) => current.filter((course) => course.id !== courseId));
+      addToast({ title: 'Course deleted', type: 'success' });
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -58,7 +88,21 @@ export function ManageCoursesPage() {
                 <span>Rating: {course.rating}</span>
               </div>
             </div>
-            <Button variant="outline" size="sm"><Edit className="h-4 w-4" /> Edit</Button>
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              {course.status === 'draft' ? (
+                <Button size="sm" onClick={() => updateStatus(course.id, 'pending')} disabled={busyId === course.id}>
+                  <Send className="h-4 w-4" /> Publish
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => updateStatus(course.id, 'draft')} disabled={busyId === course.id}>
+                  <FileText className="h-4 w-4" /> Draft
+                </Button>
+              )}
+              <Button variant="outline" size="sm"><Edit className="h-4 w-4" /> Edit</Button>
+              <Button variant="danger" size="sm" onClick={() => deleteCourse(course.id)} disabled={busyId === course.id}>
+                <Trash2 className="h-4 w-4" /> Delete
+              </Button>
+            </div>
           </Card>
         ))}
       </div>

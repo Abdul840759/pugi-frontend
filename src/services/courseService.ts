@@ -1,61 +1,90 @@
-import type { Course } from '@/types';
-import { mockCourses, mockEnrolledCourses } from './mockData';
+import { api } from './api';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const normalizeCourse = (course: any) => ({ ...course, id: course.id ?? course._id });
+const normalizeCourses = (courses: any[]) => courses.map(normalizeCourse);
 
 export const courseService = {
-  async getAllCourses(): Promise<Course[]> {
-    await delay(500);
-    return mockCourses;
+  // All published courses (explore page)
+  async getAllCourses(params?: { search?: string; category?: string; level?: string }) {
+    const { data } = await api.get('/courses', { params });
+    return normalizeCourses(data); // Course[]
   },
 
+  // Courses the logged-in learner is enrolled in
   async getEnrolledCourses() {
-    await delay(500);
-    return mockEnrolledCourses;
+    const { data } = await api.get('/courses/enrolled');
+    return normalizeCourses(data); // Course[]
   },
 
-  async getCourseById(id: string): Promise<Course | undefined> {
-    await delay(400);
-    return mockCourses.find((c) => c.id === id);
+  // Courses created by the logged-in tutor
+  async getTutorCourses() {
+    const { data } = await api.get('/courses/tutor');
+    return normalizeCourses(data); // Course[]
   },
 
-  async getTutorCourses(tutorId: string): Promise<Course[]> {
-    await delay(500);
-    return mockCourses.filter((c) => c.instructorId === tutorId);
+  // Pending courses (admin moderation)
+  async getPendingCourses() {
+    const { data } = await api.get('/courses/pending');
+    return normalizeCourses(data); // Course[]
   },
 
-  async createCourse(course: Partial<Course>): Promise<Course> {
-    await delay(800);
-    const newCourse: Course = {
-      id: `c${mockCourses.length + 1}`,
-      title: course.title ?? 'Untitled Course',
-      description: course.description ?? '',
-      thumbnail: course.thumbnail ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop',
-      instructor: course.instructor ?? 'Unknown',
-      instructorId: course.instructorId ?? '2',
-      category: course.category ?? 'General',
-      level: course.level ?? 'beginner',
-      duration: course.duration ?? '0h',
-      rating: 0,
-      enrolledCount: 0,
-      status: 'draft',
-      modules: [],
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    mockCourses.push(newCourse);
-    return newCourse;
+  // Single course by ID
+  async getCourseById(id: string) {
+    const { data } = await api.get(`/courses/${id}`);
+    return normalizeCourse(data); // Course
   },
 
-  async updateCourseStatus(id: string, status: Course['status']): Promise<Course> {
-    await delay(500);
-    const course = mockCourses.find((c) => c.id === id);
-    if (!course) throw new Error('Course not found');
-    course.status = status;
-    return course;
+  // Create a new course (tutor)
+  async createCourse(payload: {
+    title: string;
+    description: string;
+    category: string;
+    level: string;
+    thumbnail?: string;
+    instructor?: string;
+    instructorId?: string;
+    duration?: string;
+    modules?: unknown[];
+    status?: 'draft' | 'pending';
+  }) {
+    const { data } = await api.post('/courses', payload);
+    return normalizeCourse(data);
   },
 
-  async getPendingCourses(): Promise<Course[]> {
-    await delay(500);
-    return mockCourses.filter((c) => c.status === 'pending');
+  // Update a course (tutor)
+  async updateCourse(id: string, payload: Partial<{
+    title: string;
+    description: string;
+    category: string;
+    level: string;
+    thumbnail: string;
+    duration: string;
+    modules: unknown[];
+  }>) {
+    const { data } = await api.patch(`/courses/${id}`, payload);
+    return normalizeCourse(data);
+  },
+
+  async updateCourseStatus(id: string, status: 'draft' | 'pending') {
+    const { data } = await api.patch(`/courses/${id}/status`, { status });
+    return normalizeCourse(data);
+  },
+
+  // Delete a course (tutor/admin)
+  async deleteCourse(id: string) {
+    const { data } = await api.delete(`/courses/${id}`);
+    return data;
+  },
+
+  // Enroll in a course (learner)
+  async enrollInCourse(courseId: string) {
+    const { data } = await api.post(`/courses/${courseId}/enroll`);
+    return data;
+  },
+
+  // Approve or reject a course (admin)
+  async moderateCourse(id: string, action: 'approve' | 'reject') {
+    const { data } = await api.patch(`/courses/${id}/moderate`, { action });
+    return data;
   },
 };

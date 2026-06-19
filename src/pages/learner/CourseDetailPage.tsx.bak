@@ -406,7 +406,7 @@ export function CourseDetailPage() {
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Downloads</h3>
               <div className="space-y-2">
                 {currentLesson.downloads.map((download: any) => (
-                  <a
+                  
                     key={download.url}
                     href={download.url}
                     className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"

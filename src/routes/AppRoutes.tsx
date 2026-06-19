@@ -9,6 +9,8 @@ import { LandingPage } from '@/pages/public/LandingPage';
 import { AboutPage } from '@/pages/public/AboutPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 import { LearnerDashboardPage } from '@/pages/learner/DashboardPage';
@@ -24,6 +26,7 @@ import { ManageCoursesPage } from '@/pages/tutor/ManageCoursesPage';
 import { StudentsPage } from '@/pages/tutor/StudentsPage';
 import { SchedulePage } from '@/pages/tutor/SchedulePage';
 import { AnalyticsPage } from '@/pages/tutor/AnalyticsPage';
+import { TutorSettingsPage } from '@/pages/tutor/SettingsPage';
 
 import { AdminDashboardPage } from '@/pages/admin/DashboardPage';
 import { UsersPage } from '@/pages/admin/UsersPage';
@@ -52,6 +55,8 @@ export function AppRoutes() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['learner']} />}>
@@ -73,6 +78,7 @@ export function AppRoutes() {
           <Route path="/tutor/students" element={<StudentsPage />} />
           <Route path="/tutor/analytics" element={<AnalyticsPage />} />
           <Route path="/tutor/schedule" element={<SchedulePage />} />
+          <Route path="/tutor/settings" element={<TutorSettingsPage />} />
         </Route>
       </Route>
 

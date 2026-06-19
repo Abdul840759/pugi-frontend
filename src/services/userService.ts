@@ -1,62 +1,72 @@
-import type { User } from '@/types';
-import { mockNotifications, mockUsers } from './mockData';
+import { api } from './api';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const normalizeUser = (user: any) => ({ ...user, id: user.id ?? user._id });
+const normalizeUsers = (users: any[]) => users.map(normalizeUser);
 
 export const userService = {
-  async getAllUsers(): Promise<User[]> {
-    await delay(500);
-    return mockUsers;
+  // Get all users (admin)
+  async getAllUsers() {
+    const { data } = await api.get('/users');
+    return normalizeUsers(data); // User[]
   },
 
-  async getPendingTutors(): Promise<User[]> {
-    await delay(500);
-    return [
-      {
-        id: 't1',
-        email: 'newtutor@email.com',
-        name: 'Lisa Park',
-        role: 'tutor',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa',
-        createdAt: '2025-06-01',
-      },
-      {
-        id: 't2',
-        email: 'dev@email.com',
-        name: 'Tom Baker',
-        role: 'tutor',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tom',
-        createdAt: '2025-06-05',
-      },
-    ];
+  // Get pending tutor approvals (admin)
+  async getPendingTutors() {
+    const { data } = await api.get('/users/pending-tutors');
+    return normalizeUsers(data); // User[]
   },
 
-  async approveTutor(id: string): Promise<void> {
-    await delay(500);
-    console.log(`Tutor ${id} approved`);
+  // Approve or reject a tutor (admin)
+  async moderateTutor(id: string, action: 'approve' | 'reject') {
+    const { data } = await api.patch(`/users/${id}/moderate`, { action });
+    return data;
   },
 
-  async rejectTutor(id: string): Promise<void> {
-    await delay(500);
-    console.log(`Tutor ${id} rejected`);
+  // Get logged-in user's profile
+  async getProfile() {
+    const { data } = await api.get('/users/profile');
+    return normalizeUser(data); // User
   },
 
+  // Update logged-in user's profile (name, email)
+  async updateProfile(payload: { name?: string; email?: string }) {
+    const { data } = await api.patch('/users/profile', payload);
+    return normalizeUser(data);
+  },
+
+  // Upload avatar as base64
+  async uploadAvatar(base64: string) {
+    const { data } = await api.patch('/users/profile/avatar', { avatar: base64 });
+    return data; // { avatar: string }
+  },
+
+  // Change password
+  async changePassword(payload: { oldPassword: string; newPassword: string }) {
+    const { data } = await api.patch('/users/profile/password', payload);
+    return data;
+  },
+
+  // Get notifications for logged-in user
   async getNotifications() {
-    await delay(300);
-    return mockNotifications;
+    const { data } = await api.get('/users/notifications');
+    return data; // Notification[]
   },
 
-  async markNotificationRead(id: string): Promise<void> {
-    await delay(200);
-    const notification = mockNotifications.find((n) => n.id === id);
-    if (notification) notification.read = true;
+  // Mark a notification as read
+  async markNotificationRead(id: string) {
+    const { data } = await api.patch(`/users/notifications/${id}/read`);
+    return data;
   },
 
-  async updateProfile(userId: string, data: Partial<User>): Promise<User> {
-    await delay(600);
-    const user = mockUsers.find((u) => u.id === userId);
-    if (!user) throw new Error('User not found');
-    Object.assign(user, data);
-    return user;
+  // Mark all notifications as read
+  async markAllNotificationsRead() {
+    const { data } = await api.patch('/users/notifications/read-all');
+    return data;
+  },
+
+  // Search tutors by name (for messaging)
+  async searchTutors(query: string) {
+    const { data } = await api.get('/users/tutors/search', { params: { q: query } });
+    return normalizeUsers(data); // User[]
   },
 };
