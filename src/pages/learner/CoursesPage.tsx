@@ -88,7 +88,7 @@ export function LearnerCoursesPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-3 sm:p-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Explore Courses</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -97,7 +97,7 @@ export function LearnerCoursesPage() {
       </div>
 
       {/* Category cards */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
         {CATEGORIES.map((cat) => {
           const meta = CATEGORY_META[cat];
           const Icon = meta.icon;
@@ -106,13 +106,13 @@ export function LearnerCoursesPage() {
             <button
               key={cat}
               onClick={() => selectCategory(cat)}
-              className={`flex flex-col items-center gap-2 rounded-xl p-3 text-center transition-all
+              className={`flex flex-col items-center gap-1.5 rounded-xl p-2 sm:p-3 text-center transition-all
                 ${active
                   ? 'bg-blue-500 text-white shadow-md scale-[1.03]'
                   : 'bg-white dark:bg-gray-800 hover:shadow-md hover:-translate-y-0.5'
                 }`}
             >
-              <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-white/20' : meta.color}`}>
+              <span className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg ${active ? 'bg-white/20' : meta.color}`}>
                 <Icon size={18} className={active ? 'text-white' : ''} />
               </span>
               <span className={`text-xs font-medium leading-tight ${active ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -172,7 +172,7 @@ export function LearnerCoursesPage() {
           <p>No courses found. Try a different search.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {courses.map((course) => {
             const isEnrolled = enrolled.has(course._id);
             return (

@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CheckCircle, Circle, Volume2, VolumeX, BookOpen,
   Award, Download, Bookmark, BookmarkCheck, Trophy, XCircle, StickyNote,
+  Copy, Check, Play, Terminal, Menu, X,
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { progressService } from '@/services/progressService';
@@ -11,7 +12,6 @@ import { quizService } from '@/services/quizService';
 import { useToast } from '@/hooks/useToast';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Loader } from '@/components/ui/Loader';
-
 interface QuizState {
   quiz: any;
   questionIndex: number;
@@ -19,7 +19,228 @@ interface QuizState {
   result: any;
   submitting: boolean;
 }
+// ── Diagram Block (Mermaid) ─────────────────────────────────────────────────
+function DiagramBlock({ code }: { code: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const id = 'mermaid-' + Math.random().toString(36).slice(2);
+    import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs' as any)
+      .then((m: any) => {
+        m.default.initialize({ startOnLoad: false, theme: 'dark' });
+        m.default.render(id, code.trim()).then(({ svg }: any) => {
+          if (ref.current) ref.current.innerHTML = svg;
+        });
+      })
+      .catch(() => {
+        if (ref.current) ref.current.innerHTML = '<p class="text-red-400 p-4">Failed to render diagram</p>';
+      });
+  }, [code]);
+  return (
+    <div className="my-4 rounded-xl overflow-hidden border border-gray-700 shadow-lg max-w-full">
+      <div className="flex items-center gap-2 bg-gray-800 px-4 py-2">
+        <span className="text-xs text-blue-400 font-semibold">📊 Diagram</span>
+      </div>
+      <div ref={ref} className="bg-gray-900 p-6 flex justify-center overflow-x-auto" />
 
+
+    </div>
+  );
+}
+// ── Browser Preview Block ─────────────────────────────────────────────────
+function BrowserPreview({ code }: { code: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const html = code.includes('<html') ? code : `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: system-ui, sans-serif; padding: 16px; margin: 0; }
+</style>
+</head>
+<body>${code}</body>
+</html>`;
+  return (
+    <div className="my-6 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 shadow-lg">
+      <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 px-4 py-2 border-b border-blue-200 dark:border-blue-700">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+          </div>
+          <span className="text-xs text-blue-600 dark:text-blue-300 font-semibold ml-2">🌐 Browser Preview</span>
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300"
+        >
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      <iframe
+        srcDoc={html}
+        title="browser-preview"
+        sandbox="allow-scripts"
+        className={`w-full bg-white transition-all duration-300 ${expanded ? 'h-96' : 'h-48'}`}
+      />
+    </div>
+  );
+}
+// ── Code Block with Copy + Try It Yourself ──────────────────────────────────
+const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
+const LANG_MAP: Record<string, { language: string; version: string }> = {
+  js: { language: 'javascript', version: '18.15.0' },
+  javascript: { language: 'javascript', version: '18.15.0' },
+  ts: { language: 'typescript', version: '5.0.3' },
+  typescript: { language: 'typescript', version: '5.0.3' },
+  py: { language: 'python', version: '3.10.0' },
+  python: { language: 'python', version: '3.10.0' },
+  sql: { language: 'sqlite3', version: '3.36.0' },
+  bash: { language: 'bash', version: '5.2.0' },
+  sh: { language: 'bash', version: '5.2.0' },
+  java: { language: 'java', version: '15.0.2' },
+  cpp: { language: 'c++', version: '10.2.0' },
+  c: { language: 'c', version: '10.2.0' },
+  go: { language: 'go', version: '1.16.2' },
+  rust: { language: 'rust', version: '1.50.0' },
+  php: { language: 'php', version: '8.0.2' },
+  ruby: { language: 'ruby', version: '3.0.1' },
+};
+function CodeBlock({ code, lang }: { code: string; lang: string }) {
+  const [copied, setCopied] = useState(false);
+  const [tryCode, setTryCode] = useState(code);
+  const [output, setOutput] = useState<string[]>([]);
+  const [hasRun, setHasRun] = useState(false);
+  const [running, setRunning] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const normalLang = (lang || 'js').toLowerCase().trim();
+  const isJS = normalLang === 'js' || normalLang === 'javascript';
+  const pistonLang = LANG_MAP[normalLang];
+  const canRun = isJS || !!pistonLang;
+  const runWithPiston = async () => {
+    if (!pistonLang) return;
+    setRunning(true);
+    setHasRun(true);
+    setOutput(['⏳ Running...']);
+    try {
+      const res = await fetch(PISTON_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: pistonLang.language,
+          version: pistonLang.version,
+          files: [{ content: tryCode }],
+        }),
+      });
+      const data = await res.json();
+      const out = data.run?.output || data.run?.stderr || 'No output';
+      setOutput(out.split('\n').filter(Boolean));
+    } catch (err: any) {
+      setOutput(['❌ Failed to run: ' + err.message]);
+    } finally {
+      setRunning(false);
+    }
+  };
+  const runWithIframe = () => {
+    setRunning(true);
+    setHasRun(true);
+    setOutput([]);
+    const iframe = iframeRef.current;
+    if (!iframe) { setRunning(false); return; }
+    const logs: string[] = [];
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.source !== 'pugi-runner') return;
+      if (e.data.type === 'log')   logs.push(e.data.value);
+      if (e.data.type === 'error') logs.push('❌ ' + e.data.value);
+      if (e.data.type === 'warn')  logs.push('⚠️ ' + e.data.value);
+      if (e.data.type === 'done') {
+        window.removeEventListener('message', handleMessage);
+        setOutput(logs.length ? [...logs] : ['✅ Code ran successfully (no output)']);
+        setRunning(false);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    const safeCode = tryCode.replace(/<\/script>/gi, '<\/script>');
+    const html = `<!DOCTYPE html><html><body><script>
+const p = window.parent; const src = 'pugi-runner';
+console.log = (...a) => p.postMessage({source:src,type:'log',value:a.map(x=>typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' ')},'*');
+console.error = (...a) => p.postMessage({source:src,type:'error',value:a.join(' ')},'*');
+console.warn  = (...a) => p.postMessage({source:src,type:'warn',value:a.join(' ')},'*');
+try { ${safeCode} } catch(e){ p.postMessage({source:src,type:'error',value:e.message},'*'); }
+p.postMessage({source:src,type:'done'},'*');
+<\/script></body></html>`;
+    iframe.srcdoc = html;
+  };
+  const runCode = () => {
+    if (isJS) runWithIframe();
+    else runWithPiston();
+  };
+  const copy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const langLabel = normalLang || 'code';
+  return (
+    <div data-code-block="true" className="my-6 rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+      <div className="flex items-center justify-between bg-gray-800 px-4 py-2">
+        <span className="text-xs text-gray-400 font-mono">{langLabel}</span>
+        <button onClick={copy} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded">
+          {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <pre className="bg-gray-900 text-green-400 p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm font-mono leading-relaxed max-w-full">
+        <code>{code}</code>
+      </pre>
+      {canRun && (
+        <div className="bg-gray-850 border-t border-gray-700">
+          <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 border-t border-gray-600">
+            <Terminal size={13} className="text-blue-400" />
+            <span className="text-xs text-blue-400 font-semibold">Try It Yourself</span>
+            <span className="text-xs text-gray-500 ml-1">— edit and run</span>
+            {!isJS && <span className="text-xs text-violet-400 ml-auto">runs on Piston ({pistonLang?.language})</span>}
+          </div>
+          <textarea
+            value={tryCode}
+            onChange={e => setTryCode(e.target.value)}
+            rows={Math.min(Math.max(tryCode.split('\n').length, 4), 16)}
+            className="w-full bg-gray-900 text-yellow-300 font-mono text-xs sm:text-sm p-3 sm:p-4 outline-none resize-y border-none"
+            spellCheck={false}
+          />
+          <div className="flex items-center justify-between bg-gray-800 px-4 py-2 border-t border-gray-700">
+            <button onClick={() => { setTryCode(code); setOutput([]); setHasRun(false); }} className="text-xs text-gray-400 hover:text-white transition-colors">
+              Reset
+            </button>
+            <iframe ref={iframeRef} style={{ display: 'none' }} title="code-runner" sandbox="allow-scripts" />
+            <button onClick={runCode} disabled={running} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+              <Play size={12} /> {running ? 'Running...' : 'Run Code'}
+            </button>
+          </div>
+          {hasRun && (
+            <div className="border-t border-gray-700">
+              <div className="flex items-center gap-2 bg-gray-800 px-4 py-1.5">
+                <span className="text-xs text-gray-400 font-semibold">Output</span>
+              </div>
+              <div className="bg-black p-4 min-h-[48px] font-mono text-sm">
+                {output.length === 0
+                  ? <span className="text-gray-500">No output</span>
+                  : output.map((line, i) => (
+                    <div key={i} className={`mb-1 ${line.startsWith('❌') ? 'text-red-400' : line.startsWith('⚠️') ? 'text-yellow-400' : 'text-green-400'}`}>
+                      {line}
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+// ── Main Component ───────────────────────────────────────────────────────────
 export function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -32,12 +253,13 @@ export function CourseDetailPage() {
   const [progress, setProgress] = useState(0);
   const [marking, setMarking] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [newBadges, setNewBadges] = useState<string[]>([]);
   const [issuingCertificate, setIssuingCertificate] = useState(false);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [noteText, setNoteText] = useState('');
   const [quizState, setQuizState] = useState<QuizState | null>(null);
-
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   useEffect(() => {
     const load = async () => {
       try {
@@ -57,17 +279,13 @@ export function CourseDetailPage() {
     };
     load();
   }, [id, navigate, showToast]);
-
   useEffect(() => {
     if (!id) return;
     try {
       const raw = localStorage.getItem(`pugi_bookmarks_${id}`);
       setBookmarks(new Set(raw ? JSON.parse(raw) : []));
-    } catch {
-      setBookmarks(new Set());
-    }
+    } catch { setBookmarks(new Set()); }
   }, [id]);
-
   const currentModule = course?.modules?.[activeModule];
   const currentLesson = currentModule?.lessons?.[activeLesson];
   const allLessons = course?.modules?.flatMap((m: any) =>
@@ -79,50 +297,42 @@ export function CourseDetailPage() {
   const lessonId = currentLesson?._id || String(currentLessonIndex);
   const isDone = completedLessons.has(lessonId);
   const isBookmarked = bookmarks.has(lessonId);
-
   useEffect(() => {
     if (!id || !lessonId) return;
     try {
       setNoteText(localStorage.getItem(`pugi_notes_${id}_${lessonId}`) || '');
-    } catch {
-      setNoteText('');
-    }
+    } catch { setNoteText(''); }
   }, [id, lessonId]);
-
   const stopSpeech = useCallback(() => {
+    if ((window as any).__pugiTTSStop) {
+      (window as any).__pugiTTSStop();
+    }
     window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);
-
   const goToLesson = (modIdx: number, lesIdx: number) => {
     stopSpeech();
     setActiveModule(modIdx);
     setActiveLesson(lesIdx);
     setNewBadges([]);
+    setMobileNavOpen(false);
   };
-
   const goNext = () => {
     if (!course) return;
     const mod = course.modules[activeModule];
-    if (activeLesson < mod.lessons.length - 1) {
-      goToLesson(activeModule, activeLesson + 1);
-    } else if (activeModule < course.modules.length - 1) {
-      goToLesson(activeModule + 1, 0);
-    }
+    if (activeLesson < mod.lessons.length - 1) goToLesson(activeModule, activeLesson + 1);
+    else if (activeModule < course.modules.length - 1) goToLesson(activeModule + 1, 0);
   };
-
   const goPrev = () => {
-    if (activeLesson > 0) {
-      goToLesson(activeModule, activeLesson - 1);
-    } else if (activeModule > 0) {
+    if (activeLesson > 0) goToLesson(activeModule, activeLesson - 1);
+    else if (activeModule > 0) {
       const prevMod = course.modules[activeModule - 1];
       goToLesson(activeModule - 1, prevMod.lessons.length - 1);
     }
   };
-
   const toggleBookmark = () => {
     if (!id || !lessonId) return;
-    setBookmarks((prev) => {
+    setBookmarks(prev => {
       const next = new Set(prev);
       if (next.has(lessonId)) next.delete(lessonId);
       else next.add(lessonId);
@@ -130,13 +340,21 @@ export function CourseDetailPage() {
       return next;
     });
   };
-
   const saveNote = (text: string) => {
     setNoteText(text);
     if (!id || !lessonId) return;
     localStorage.setItem(`pugi_notes_${id}_${lessonId}`, text);
+    // Save meta so JotsPage can show course/lesson titles
+    const metaKey = `pugi_meta_${id}_${lessonId}`;
+    const existing = localStorage.getItem(metaKey);
+    const meta = existing ? JSON.parse(existing) : {};
+    localStorage.setItem(metaKey, JSON.stringify({
+      ...meta,
+      courseTitle: course?.title || 'Unknown Course',
+      lessonTitle: currentLesson?.title || 'Unknown Lesson',
+      savedAt: new Date().toISOString(),
+    }));
   };
-
   const startQuiz = async (moduleQuiz: any) => {
     try {
       const fullQuiz = await quizService.getQuiz(id!, currentModule._id, moduleQuiz._id);
@@ -146,21 +364,16 @@ export function CourseDetailPage() {
       goNext();
     }
   };
-
   const answerQuizQuestion = (optionIndex: number) => {
     if (!quizState) return;
     const answers = [...quizState.answers];
     answers[quizState.questionIndex] = optionIndex;
     setQuizState({ ...quizState, answers });
   };
-
   const nextQuizQuestion = async () => {
     if (!quizState) return;
     const isLast = quizState.questionIndex === quizState.quiz.questions.length - 1;
-    if (!isLast) {
-      setQuizState({ ...quizState, questionIndex: quizState.questionIndex + 1 });
-      return;
-    }
+    if (!isLast) { setQuizState({ ...quizState, questionIndex: quizState.questionIndex + 1 }); return; }
     setQuizState({ ...quizState, submitting: true });
     try {
       const res = await quizService.submitQuiz(id!, currentModule._id, quizState.quiz.id, quizState.answers);
@@ -170,18 +383,13 @@ export function CourseDetailPage() {
       setQuizState({ ...quizState, submitting: false });
     }
   };
-
-  const closeQuiz = () => {
-    setQuizState(null);
-    goNext();
-  };
-
+  const closeQuiz = () => { setQuizState(null); goNext(); };
   const markComplete = async () => {
     if (!currentLesson || marking) return;
     setMarking(true);
     try {
       const result = await progressService.completeLesson(id!, lessonId);
-      setCompletedLessons((prev) => new Set([...prev, lessonId]));
+      setCompletedLessons(prev => new Set([...prev, lessonId]));
       setProgress(result.progress);
       if (result.newBadges?.length > 0) {
         setNewBadges(result.newBadges);
@@ -193,11 +401,8 @@ export function CourseDetailPage() {
       const moduleQuiz = currentModule?.quiz;
       const hasQuiz = moduleQuiz?.questions?.length > 0;
       setTimeout(() => {
-        if (isLastLessonInModule && hasQuiz) {
-          startQuiz(moduleQuiz);
-        } else {
-          goNext();
-        }
+        if (isLastLessonInModule && hasQuiz) startQuiz(moduleQuiz);
+        else goNext();
       }, 800);
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Failed to mark complete', 'error');
@@ -205,22 +410,174 @@ export function CourseDetailPage() {
       setMarking(false);
     }
   };
+  const togglePause = useCallback(() => {
+    if (paused) {
+      window.speechSynthesis.resume();
+      setPaused(false);
+    } else {
+      window.speechSynthesis.pause();
+      setPaused(true);
+    }
+  }, [paused]);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   const toggleReadAloud = () => {
     if (speaking) { stopSpeech(); return; }
-    if (!currentLesson?.content) return;
-    const text = currentLesson.content
-      .replace(/```[\s\S]*?```/g, 'code block. ')
-      .replace(/[#*`]/g, '');
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(utterance);
+    if (!contentRef.current) return;
+    window.speechSynthesis.cancel();
+    if ((window as any).__pugiTTSTimer) clearTimeout((window as any).__pugiTTSTimer);
+
+    const isInsideCode = (el: Element): boolean => {
+      let p = el.parentElement;
+      while (p) {
+        if (['PRE','CODE'].includes(p.tagName) || p.classList.contains('bg-gray-900')) return true;
+        if (p.getAttribute('data-no-read') === 'true') return true;
+        p = p.parentElement;
+      }
+      return false;
+    };
+
+    // Build ordered list: text nodes + code block markers
+    type Item = { type: 'text'; el: HTMLElement; text: string } | { type: 'code'; el: HTMLElement };
+    const items: Item[] = [];
+    const nodes = Array.from(contentRef.current.querySelectorAll('p, h1, h2, h3, h4, li, pre'));
+    nodes.forEach(node => {
+      if (node.tagName === 'PRE') {
+        items.push({ type: 'code', el: node as HTMLElement });
+      } else if (!isInsideCode(node)) {
+        const text = (node.textContent || '').trim();
+        if (text.length > 2) items.push({ type: 'text', el: node as HTMLElement, text });
+      }
+    });
+
+    if (!items.length) return;
+    let stopped = false;
+
+    const clearHighlight = () => {
+      items.forEach(item => {
+        item.el.style.background = '';
+        item.el.style.borderRadius = '';
+        item.el.style.boxShadow = '';
+      });
+    };
+
+    const scrollTo = (el: HTMLElement) => {
+      if (!mainRef.current) return;
+      const rect = el.getBoundingClientRect();
+      const mainRect = mainRef.current.getBoundingClientRect();
+      mainRef.current.scrollTo({
+        top: mainRef.current.scrollTop + rect.top - mainRect.top - 120,
+        behavior: 'smooth'
+      });
+    };
+
+    const speak = (idx: number) => {
+      if (stopped || idx >= items.length) {
+        clearHighlight();
+        setSpeaking(false);
+        setPaused(false);
+        if (!stopped) {
+          showToast('🎉 Read aloud complete! Great job studying this lesson.', 'success');
+        }
+        return;
+      }
+      const item = items[idx];
+      clearHighlight();
+
+      if (item.type === 'code') {
+        // Highlight code block
+        item.el.style.boxShadow = '0 0 0 4px rgba(59,130,246,0.6)';
+        item.el.style.borderRadius = '8px';
+        scrollTo(item.el);
+
+        // Announce code block
+        const utt = new SpeechSynthesisUtterance(
+          "Code block. Let's study this code block carefully. I'll give you 20 seconds."
+        );
+        utt.rate = 0.88;
+        utt.pitch = 1.0;
+        utt.onend = () => {
+          if (stopped) return;
+          // 20 second pause
+          (window as any).__pugiTTSTimer = setTimeout(() => {
+            if (stopped) return;
+            const utt2 = new SpeechSynthesisUtterance("Alright, let's move on.");
+            utt2.rate = 0.88;
+            utt2.onend = () => { if (!stopped) speak(idx + 1); };
+            utt2.onerror = () => { if (!stopped) speak(idx + 1); };
+            window.speechSynthesis.speak(utt2);
+          }, 20000);
+        };
+        utt.onerror = () => { if (!stopped) speak(idx + 1); };
+        window.speechSynthesis.speak(utt);
+        return;
+      }
+
+      // Text element
+      item.el.style.background = 'rgba(59,130,246,0.15)';
+      item.el.style.borderRadius = '6px';
+      item.el.style.boxShadow = '0 0 0 2px rgba(59,130,246,0.3)';
+      scrollTo(item.el);
+
+      const utt = new SpeechSynthesisUtterance(item.text);
+      utt.rate = 0.92;
+      utt.pitch = 1.0;
+      utt.onend = () => { if (!stopped) speak(idx + 1); };
+      utt.onerror = () => { if (!stopped) speak(idx + 1); };
+      window.speechSynthesis.speak(utt);
+    };
+
+    (window as any).__pugiTTSStop = () => {
+      stopped = true;
+      window.speechSynthesis.cancel();
+      if ((window as any).__pugiTTSTimer) clearTimeout((window as any).__pugiTTSTimer);
+      clearHighlight();
+    };
+
+    // Detect iOS for premium experience
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // Select best available voice
+    const voices = window.speechSynthesis.getVoices();
+    const premiumVoice = voices.find(v =>
+      v.name.includes('Samantha') ||    // iOS premium
+      v.name.includes('Karen') ||        // iOS AU
+      v.name.includes('Daniel') ||       // iOS UK
+      v.name.includes('Google UK') ||    // Android premium
+      v.name.includes('Google US')
+    ) || voices.find(v => v.lang.startsWith('en')) || null;
+
+    // Haptic feedback for iOS
+    const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+      if (isIOS && 'vibrate' in navigator) {
+        const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+        navigator.vibrate(patterns[style]);
+      }
+    };
+    haptic('medium');
+
+    // Override speak to use premium voice
+    const originalSpeak = speak;
+    const premiumSpeak = (idx: number) => {
+      if (premiumVoice) {
+        const origSpeechSynth = window.speechSynthesis.speak.bind(window.speechSynthesis);
+        window.speechSynthesis.speak = (utt: SpeechSynthesisUtterance) => {
+          utt.voice = premiumVoice;
+          utt.rate = isIOS ? 0.9 : 0.92;
+          utt.pitch = isIOS ? 1.05 : 1.0;
+          origSpeechSynth(utt);
+        };
+      }
+      speak(idx);
+    };
+
     setSpeaking(true);
+    premiumSpeak(0);
   };
 
-  const issueCertificate = async () => {
+    const issueCertificate = async () => {
     if (!id || issuingCertificate) return;
     setIssuingCertificate(true);
     try {
@@ -232,42 +589,69 @@ export function CourseDetailPage() {
       setIssuingCertificate(false);
     }
   };
-
-  const renderContent = (content: string) => {
-    if (!content) return <p className="text-gray-500 italic">No content yet.</p>;
-    const parts = content.split(/(```[\s\S]*?```)/g);
+  // ── Content Renderer ──────────────────────────────────────────────────────
+  const renderContent = (rawContent: string) => {
+    if (!rawContent) return <p className="text-gray-500 italic">No content yet.</p>;
+    const parts = rawContent.split(/(```[\s\S]*?```)/g);
     return parts.map((part, i) => {
-      if (part.startsWith('```')) {
-        const code = part.replace(/```\w*\n?/, '').replace(/```$/, '');
-        return (
-          <pre key={i} className="bg-gray-900 text-green-400 rounded-xl p-4 overflow-x-auto text-sm my-4 font-mono">
-            <code>{code}</code>
-          </pre>
-        );
+      if (part.startsWith("```")) {
+        const firstLine = part.split("\n")[0].replace(/```/, "").trim().toLowerCase();
+        const code = part.replace(/```\w*\n?/, "").replace(/```$/, "");
+        if (firstLine === "mermaid") {
+          return <DiagramBlock key={i} code={code} />;
+        }
+        if (firstLine === "html" || firstLine === "preview") {
+          return (
+            <div key={i}>
+              <CodeBlock code={code} lang={firstLine} />
+              <BrowserPreview code={code} />
+            </div>
+          );
+        }
+        return <CodeBlock key={i} code={code} lang={firstLine} />;
       }
       return (
         <div key={i}>
-          {part.split('\n').map((line, j) => {
-            if (line.startsWith('# ')) return <h1 key={j} className="text-2xl font-bold text-gray-900 dark:text-white mt-6 mb-3">{line.slice(2)}</h1>;
-            if (line.startsWith('## ')) return <h2 key={j} className="text-xl font-semibold text-gray-900 dark:text-white mt-5 mb-2">{line.slice(3)}</h2>;
-            if (line.startsWith('### ')) return <h3 key={j} className="text-lg font-medium text-gray-900 dark:text-white mt-4 mb-2">{line.slice(4)}</h3>;
-            if (line.startsWith('- ')) return <li key={j} className="text-gray-700 dark:text-gray-300 ml-4 list-disc">{line.slice(2)}</li>;
-            if (line.trim() === '') return <br key={j} />;
+          {part.split("\n").map((line, j) => {
+            if (line.startsWith("# "))   return <h1 key={j} className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-6 mb-3">{line.slice(2)}</h1>;
+            if (line.startsWith("## "))  return <h2 key={j} className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mt-5 mb-2">{line.slice(3)}</h2>;
+            if (line.startsWith("### ")) return <h3 key={j} className="text-lg font-medium text-gray-900 dark:text-white mt-4 mb-2">{line.slice(4)}</h3>;
+            if (line.startsWith("- "))   return <li key={j} className="text-gray-700 dark:text-gray-300 ml-4 list-disc">{line.slice(2)}</li>;
+            if (line.trim() === "")      return <br key={j} />;
             return <p key={j} className="text-gray-700 dark:text-gray-300 leading-relaxed mb-2">{line}</p>;
           })}
         </div>
       );
     });
   };
-
   if (loading) return <div className="flex justify-center items-center h-64"><Loader /></div>;
   if (!course) return <div className="p-6 text-gray-500">Course not found.</div>;
-
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
-      <aside className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+    <div className="relative flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden">
+      {/* Mobile drawer backdrop */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-transform duration-300
+          lg:static lg:translate-x-0
+          ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2">{course.title}</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2">{course.title}</h2>
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              className="lg:hidden flex-shrink-0 rounded-lg p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+              aria-label="Close lessons"
+            >
+              <X size={16} />
+            </button>
+          </div>
           <div className="mt-2">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
               <span>Progress</span><span>{progress}%</span>
@@ -309,24 +693,35 @@ export function CourseDetailPage() {
           ))}
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-3xl mx-auto p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{currentModule?.title}</p>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{currentLesson?.title}</h1>
+      {/* Main content */}
+      <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <div ref={contentRef} className="max-w-3xl mx-auto p-4 sm:p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden flex-shrink-0 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                aria-label="Show lessons"
+              >
+                <Menu size={18} />
+              </button>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentModule?.title}</p>
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">{currentLesson?.title}</h1>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={toggleBookmark}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors
+                className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors
                   ${isBookmarked
                     ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-500'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                   }`}
               >
                 {isBookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
-                {isBookmarked ? 'Saved' : 'Bookmark'}
+                <span className="hidden sm:inline">{isBookmarked ? 'Saved' : 'Bookmark'}</span>
               </button>
               <button
                 onClick={toggleReadAloud}
@@ -337,11 +732,11 @@ export function CourseDetailPage() {
                   }`}
               >
                 {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                {speaking ? 'Stop' : 'Read Aloud'}
+                <span className="hidden sm:inline">{speaking ? 'Stop' : 'Read Aloud'}</span>
               </button>
             </div>
           </div>
-
+          {/* Badge earned */}
           {newBadges.length > 0 && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mb-6 flex items-center gap-3">
               <Trophy className="text-yellow-500" size={24} />
@@ -351,8 +746,8 @@ export function CourseDetailPage() {
               </div>
             </div>
           )}
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm mb-6">
+          {/* Lesson content */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm mb-6">
             {progress === 100 && (
               <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -380,7 +775,16 @@ export function CourseDetailPage() {
               </div>
             )}
           </div>
-
+          {/* Code Example section */}
+          {currentLesson?.codeExample && (
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                <Terminal size={16} className="text-blue-500" /> Code Example
+              </h3>
+              <CodeBlock code={currentLesson.codeExample} lang="js" />
+            </div>
+          )}
+          {/* Video */}
           {currentLesson?.videoUrl && (
             <div className="mb-6 overflow-hidden rounded-xl bg-black">
               <iframe
@@ -392,21 +796,14 @@ export function CourseDetailPage() {
               />
             </div>
           )}
-
-          {currentLesson?.imageUrl && (
-            <img
-              src={currentLesson.imageUrl}
-              alt={currentLesson.title}
-              className="mb-6 max-h-96 w-full rounded-xl object-cover"
-            />
-          )}
-
+          {/* Downloads */}
           {currentLesson?.downloads?.length > 0 && (
             <div className="mb-6 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Downloads</h3>
-              <div className="space-y-2">
+              <div data-no-read="true" className="space-y-2">
                 {currentLesson.downloads.map((download: any) => (
-                  <a
+                  
+                    <a
                     key={download.url}
                     href={download.url}
                     className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -418,23 +815,14 @@ export function CourseDetailPage() {
               </div>
             </div>
           )}
-
-          {currentLesson?.codeExample && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Code Example</h3>
-              <pre className="bg-gray-900 text-green-400 rounded-xl p-4 overflow-x-auto text-sm font-mono">
-                <code>{currentLesson.codeExample}</code>
-              </pre>
-            </div>
-          )}
-
-          <div className="mb-6 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+          {/* Notes - excluded from read aloud */}
+          <div data-no-read="true" className="mb-6 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
             <h3 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white mb-3">
               <StickyNote size={16} /> My Notes
             </h3>
             <textarea
               value={noteText}
-              onChange={(e) => saveNote(e.target.value)}
+              onChange={e => saveNote(e.target.value)}
               placeholder="Jot down anything you want to remember about this lesson..."
               rows={4}
               className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700
@@ -443,19 +831,19 @@ export function CourseDetailPage() {
             />
             <p className="text-xs text-gray-400 mt-1">Saved automatically on this device.</p>
           </div>
-
-          <div className="flex items-center justify-between">
+          {/* Navigation */}
+          <div className="flex items-center justify-between gap-2">
             <button
               onClick={goPrev}
               disabled={currentLessonIndex === 0}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
             >
-              <ChevronLeft size={16} /> Previous
+              <ChevronLeft size={16} /> <span className="hidden sm:inline">Previous</span>
             </button>
             <button
               onClick={markComplete}
               disabled={isDone || marking}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-colors
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition-colors
                 ${isDone
                   ? 'bg-green-50 dark:bg-green-900/20 text-green-600 cursor-default'
                   : 'bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50'
@@ -467,14 +855,50 @@ export function CourseDetailPage() {
             <button
               onClick={goNext}
               disabled={currentLessonIndex === allLessons.length - 1}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
             >
-              Next <ChevronRight size={16} />
+              <span className="hidden sm:inline">Next</span> <ChevronRight size={16} />
             </button>
           </div>
         </div>
-      </main>
+      {/* Floating Read Aloud Button */}
+      {speaking && (
+        <>
+          {/* Desktop/tablet — top center pill */}
+          <div className="hidden sm:flex fixed top-4 left-1/2 -translate-x-1/2 z-[200] items-center gap-3 bg-blue-600/90 backdrop-blur-md text-white pl-4 pr-2 py-2 rounded-full shadow-2xl border border-blue-400/50 ring-1 ring-white/20">
+            <Volume2 size={15} className={paused ? 'opacity-50' : 'animate-pulse'} />
+            <span className="text-sm font-medium">{paused ? 'Paused' : 'Reading aloud...'}</span>
+            <button onClick={togglePause}
+              className="bg-white/20 hover:bg-white/30 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors text-base">
+              {paused ? '▶' : '⏸'}
+            </button>
+            <button onClick={stopSpeech}
+              className="bg-slate-700 dark:bg-slate-600 hover:bg-slate-600 dark:hover:bg-slate-500 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+              <VolumeX size={14} />
+            </button>
+          </div>
 
+          {/* Mobile — right side stack (premium iOS glass effect) */}
+          <div className="sm:hidden fixed right-3 top-1/2 -translate-y-1/2 z-[200] flex flex-col items-center gap-2">
+            {/* Status badge */}
+            <div className="bg-blue-600/90 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg border border-blue-400/50 ring-1 ring-white/20">
+              {paused ? '⏸ Paused' : '🔊 Reading'}
+            </div>
+            {/* Pause/Resume button */}
+            <button onClick={togglePause}
+              className="bg-blue-600/90 backdrop-blur-md text-white rounded-full w-14 h-14 flex items-center justify-center shadow-2xl border-2 border-white/30 ring-1 ring-blue-400/30 text-2xl active:scale-95 transition-transform">
+              {paused ? '▶' : '⏸'}
+            </button>
+            {/* Stop button */}
+            <button onClick={stopSpeech}
+              className="bg-slate-700/80 backdrop-blur-md text-white rounded-full w-11 h-11 flex items-center justify-center shadow-lg border border-white/20 active:scale-95 transition-transform">
+              <VolumeX size={16} />
+            </button>
+          </div>
+        </>
+      )}
+      </main>
+      {/* Quiz modal */}
       {quizState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-800 shadow-xl p-6">
@@ -512,26 +936,23 @@ export function CourseDetailPage() {
                   disabled={quizState.answers[quizState.questionIndex] === undefined || quizState.submitting}
                   className="w-full py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
                 >
-                  {quizState.submitting
-                    ? 'Submitting...'
+                  {quizState.submitting ? 'Submitting...'
                     : quizState.questionIndex === quizState.quiz.questions.length - 1
-                    ? 'Submit Quiz'
-                    : 'Next Question'}
+                    ? 'Submit Quiz' : 'Next Question'}
                 </button>
               </>
             ) : (
               <div className="text-center py-2">
-                {quizState.result.passed ? (
-                  <Trophy size={48} className="mx-auto text-yellow-500 mb-3" />
-                ) : (
-                  <XCircle size={48} className="mx-auto text-red-400 mb-3" />
-                )}
+                {quizState.result.passed
+                  ? <Trophy size={48} className="mx-auto text-yellow-500 mb-3" />
+                  : <XCircle size={48} className="mx-auto text-red-400 mb-3" />
+                }
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                   {quizState.result.passed ? 'Quiz Passed!' : 'Not Quite There'}
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
                   Score: {quizState.result.score}%
-                  {quizState.result.passed && quizState.result.xp != null ? ` · +100 XP` : ''}
+                  {quizState.result.passed && quizState.result.xp != null ? ' · +100 XP' : ''}
                 </p>
                 {!quizState.result.passed && (
                   <p className="text-sm text-gray-400 mb-4">

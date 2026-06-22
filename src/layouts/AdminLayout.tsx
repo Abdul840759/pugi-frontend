@@ -17,9 +17,9 @@ export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen items-stretch bg-slate-50 dark:bg-slate-950 overflow-x-hidden">
       <Sidebar items={navItems} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} accentColor="bg-red-600" />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6">
           <Outlet />

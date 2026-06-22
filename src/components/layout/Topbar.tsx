@@ -21,7 +21,7 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-3 sm:px-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80 lg:px-6">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
@@ -75,7 +75,7 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
               alt={user?.name}
               className="h-8 w-8 rounded-full bg-slate-200"
             />
-            <span className="hidden text-sm font-medium text-slate-700 md:block dark:text-slate-300">
+            <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300">
               {user?.name}
             </span>
             <ChevronDown className="hidden h-4 w-4 text-slate-400 md:block" />

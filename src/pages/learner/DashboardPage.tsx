@@ -59,7 +59,7 @@ export function LearnerDashboardPage() {
   const completed = enrollments.filter((e) => e.progress === 100);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-3 sm:p-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Welcome back, {user?.name?.split(' ')[0]}
@@ -69,7 +69,7 @@ export function LearnerDashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard title="Enrolled" value={enrollments.length} icon={BookOpen} />
         <StatCard title="Streak" value={`${streak}d`} icon={Flame} />
         <StatCard title="XP" value={xp} icon={Star} />

@@ -29,6 +29,8 @@
   body {
     @apply bg-white text-slate-900 antialiased dark:bg-surface-dark dark:text-slate-100;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  overflow-x: hidden;
   }
 }
 

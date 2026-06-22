@@ -19,6 +19,7 @@ import { CourseDetailPage } from '@/pages/learner/CourseDetailPage';
 import { LearnerProgressPage } from '@/pages/learner/ProgressPage';
 import { LearnerMessagesPage } from '@/pages/learner/MessagesPage';
 import { LearnerSettingsPage } from '@/pages/learner/SettingsPage';
+import { JotsPage } from '@/pages/learner/JotsPage';
 
 import { TutorDashboardPage } from '@/pages/tutor/DashboardPage';
 import { CreateCoursePage } from '@/pages/tutor/CreateCoursePage';
@@ -67,6 +68,7 @@ export function AppRoutes() {
           <Route path="/learner/progress" element={<LearnerProgressPage />} />
           <Route path="/learner/messages" element={<LearnerMessagesPage />} />
           <Route path="/learner/settings" element={<LearnerSettingsPage />} />
+          <Route path="/learner/jots" element={<JotsPage />} />
         </Route>
       </Route>
 

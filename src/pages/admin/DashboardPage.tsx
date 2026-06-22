@@ -35,7 +35,7 @@ export function AdminDashboardPage() {
         <StatCard title="Pending Approvals" value={stats.pendingApprovals} icon={AlertCircle} iconColor="bg-amber-100 text-amber-600 dark:bg-amber-900/30" change="Needs attention" trend="neutral" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-3 sm:p-6 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>Monthly User Growth</CardTitle></CardHeader>
           <LineChart data={growthData} color="#ef4444" />

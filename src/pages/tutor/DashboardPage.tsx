@@ -22,13 +22,13 @@ export function TutorDashboardPage() {
   const chartData = analytics.enrollmentTrend.map((d) => ({ name: d.month, value: d.students }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-3 sm:p-0">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tutor Dashboard</h1>
         <p className="text-slate-500">Overview of your teaching performance</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <StatCard title="Total Students" value={analytics.totalStudents.toLocaleString()} icon={Users} iconColor="bg-blue-100 text-blue-600 dark:bg-blue-900/30" change="+12% this month" trend="up" />
         <StatCard title="Active Courses" value={analytics.activeCourses} icon={BookOpen} iconColor="bg-violet-100 text-violet-600 dark:bg-violet-900/30" />
         
