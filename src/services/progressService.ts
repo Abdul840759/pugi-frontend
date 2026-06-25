@@ -13,6 +13,12 @@ export const progressService = {
     return data; // { xp, streak, progress, badges }
   },
 
+  // Revert a lesson back to incomplete (used when a retake quiz is failed)
+  async uncompleteLesson(courseId: string, lessonId: string) {
+    const { data } = await api.post('/progress/uncomplete-lesson', { courseId, lessonId });
+    return data; // { progress, completedLessons[] }
+  },
+
   // Get progress for a specific course
   async getCourseProgress(courseId: string) {
     const { data } = await api.get(`/progress/course/${courseId}`);

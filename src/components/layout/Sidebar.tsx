@@ -25,9 +25,9 @@ export function Sidebar({ items, isOpen, onClose, accentColor = 'bg-primary-600'
       )}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 flex h-full w-[280px] sm:w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:h-screen lg:sticky lg:top-0 lg:self-stretch',
+          'fixed left-0 top-0 z-50 flex h-full w-[280px] sm:w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300',
           'dark:border-slate-700 dark:bg-slate-900',
-          'lg:static lg:translate-x-0',
+          'lg:static lg:translate-x-0 lg:h-screen lg:sticky lg:top-0 lg:shrink-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >

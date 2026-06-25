@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { useToast } from '@/hooks/useToast';
+import { useAuthContext } from '@/context/AuthContext';
 import { Loader } from '@/components/ui/Loader';
 
 const CATEGORY_META: Record<string, { icon: any; color: string }> = {
@@ -24,25 +25,48 @@ const CATEGORY_META: Record<string, { icon: any; color: string }> = {
 };
 
 const CATEGORIES = Object.keys(CATEGORY_META);
-const LEVELS = ['All', 'beginner', 'intermediate', 'advanced'];
+
+const getCategoryGradient = (category: string): string => {
+  const gradients: Record<string, string> = {
+    'Frontend':     'bg-gradient-to-br from-blue-500 to-blue-700',
+    'Backend':      'bg-gradient-to-br from-green-500 to-green-700',
+    'Programming':  'bg-gradient-to-br from-purple-500 to-purple-700',
+    'Design':       'bg-gradient-to-br from-pink-500 to-pink-700',
+    'DevOps':       'bg-gradient-to-br from-orange-500 to-orange-700',
+    'Data Science': 'bg-gradient-to-br from-cyan-500 to-cyan-700',
+    'Mobile':       'bg-gradient-to-br from-teal-500 to-teal-700',
+    'AI/ML':        'bg-gradient-to-br from-indigo-500 to-indigo-700',
+    'Cybersecurity':'bg-gradient-to-br from-red-500 to-red-700',
+    'Cloud':        'bg-gradient-to-br from-sky-500 to-sky-700',
+    'Blockchain':   'bg-gradient-to-br from-violet-500 to-violet-700',
+    'Game Dev':     'bg-gradient-to-br from-yellow-500 to-yellow-700',
+  };
+  return gradients[category] ?? 'bg-gradient-to-br from-gray-500 to-gray-700';
+};
+
+
+// levels removed
 
 export function LearnerCoursesPage() {
   const { showToast } = useToast();
+  const { user } = useAuthContext();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const [enrolled, setEnrolled] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [level, setLevel] = useState('All');
+  // level state removed
+  const [selectedLevel, setSelectedLevel] = useState('all');
 
   const fetchCourses = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const params: any = {};
       if (search) params.search = search;
       if (category !== 'All') params.category = category;
-      if (level !== 'All') params.level = level;
+      if (user?.techLevel) params.minLevel = user.techLevel;
       const data = await courseService.getAllCourses(params);
       setCourses(data);
     } catch {
@@ -50,7 +74,7 @@ export function LearnerCoursesPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, level, search, showToast]);
+  }, [category, search, showToast, user?.techLevel]);
 
   const fetchEnrolled = async () => {
     try {
@@ -98,8 +122,8 @@ export function LearnerCoursesPage() {
 
       {/* Category cards */}
       <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-        {CATEGORIES.map((cat) => {
-          const meta = CATEGORY_META[cat];
+        {CATEGORIES.map((cat: string) => {
+          const meta = CATEGORY_META[cat] || { icon: Terminal, color: 'bg-gray-100' };
           const Icon = meta.icon;
           const active = category === cat;
           return (
@@ -151,19 +175,44 @@ export function LearnerCoursesPage() {
               {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
-          <select
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
-            className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {LEVELS.map((l) => <option key={l}>{l}</option>)}
-          </select>
+
         </div>
       </div>
 
       {/* Results */}
+      <div className="flex gap-6">
+        {/* Level Sidebar */}
+        <div className="hidden md:flex flex-col gap-2 w-44 shrink-0">
+          {[
+            { key: 'all', emoji: '📚', label: 'All Levels' },
+            { key: 'beginner', emoji: '🌱', label: 'Beginner' },
+            { key: 'intermediate', emoji: '⚡', label: 'Intermediate' },
+            { key: 'advanced', emoji: '🚀', label: 'Advanced' },
+          ]
+            .filter(l => {
+              if (l.key === 'all') return true;
+              const levelOrder = ['beginner', 'intermediate', 'advanced'];
+              const userIdx = user?.techLevel ? levelOrder.indexOf(user.techLevel) : 0;
+              const lvlIdx = levelOrder.indexOf(l.key);
+              return lvlIdx >= userIdx;
+            })
+            .map(l => (
+              <button
+                key={l.key}
+                onClick={() => setSelectedLevel(l.key)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all
+                  ${selectedLevel === l.key
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+              >
+                <span>{l.emoji}</span>
+                <span>{l.label}</span>
+              </button>
+            ))}
+        </div>
+        {/* Course Grid */}
+        <div className="flex-1">
       {loading ? (
         <div className="flex justify-center items-center h-48"><Loader /></div>
       ) : courses.length === 0 ? (
@@ -173,26 +222,48 @@ export function LearnerCoursesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {courses.map((course) => {
-            const isEnrolled = enrolled.has(course._id);
+          {Object.entries(
+            (selectedLevel === 'all' ? courses : courses.filter((c: any) => c.level === selectedLevel)).reduce((acc: any, course: any) => {
+              const key = course.category;
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(course);
+              return acc;
+            }, {})
+          ).map(([cat, catCourses]: [string, any]) => {
+            const levelOrder = ['beginner', 'intermediate', 'advanced'];
+            const sorted = [...catCourses].sort((a, b) => levelOrder.indexOf(a.level) - levelOrder.indexOf(b.level));
+            const topCourse = sorted[0];
+            const levels = sorted.map((c: any) => c.level);
+            const isEnrolled = sorted.some((c: any) => enrolled.has(c._id));
+            const course = topCourse;
             return (
               <div
                 key={course._id}
                 className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col"
               >
                 <Link to={`/learner/courses/${course._id}`}>
-                  <img
-                    src={course.thumbnail || 'https://placehold.co/400x200?text=Course'}
-                    alt={course.title}
-                    className="w-full h-40 object-cover"
-                  />
+                  {course.thumbnail ? (
+                    <img src={course.thumbnail} alt={course.title} className="w-full h-40 object-cover" />
+                  ) : (
+                    <div className={`w-full h-40 flex items-center justify-center text-white font-bold text-lg text-center px-4 ${getCategoryGradient(course.category)}`}>
+                      {course.category}
+                    </div>
+                  )}
                 </Link>
                 <div className="p-4 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-xs font-medium text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
                       {course.category}
                     </span>
-                    <span className="text-xs text-gray-400 capitalize">{course.level}</span>
+                    {levels.map((lvl: string) => (
+                      <span key={lvl} className={{
+                        beginner: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400',
+                        intermediate: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400',
+                        advanced: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+                      }[lvl] || 'text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500'}>
+                        {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                      </span>
+                    ))}
                   </div>
                   <Link to={`/learner/courses/${course._id}`}>
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2 hover:text-blue-500 transition-colors">
@@ -238,6 +309,8 @@ export function LearnerCoursesPage() {
           })}
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

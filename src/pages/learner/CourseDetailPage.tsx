@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CheckCircle, Circle, Volume2, VolumeX, BookOpen,
   Award, Download, Bookmark, BookmarkCheck, Trophy, XCircle, StickyNote,
-  Copy, Check, Play, Terminal, Menu, X,
+  Copy, Check, Play, Terminal, Menu, X, Brain, Sparkles, PlayCircle,
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { progressService } from '@/services/progressService';
@@ -204,7 +204,7 @@ p.postMessage({source:src,type:'done'},'*');
           </div>
           <textarea
             value={tryCode}
-            onChange={e => setTryCode(e.target.value)}
+            onChange={(e) => setTryCode(e.target.value)}
             rows={Math.min(Math.max(tryCode.split('\n').length, 4), 16)}
             className="w-full bg-gray-900 text-yellow-300 font-mono text-xs sm:text-sm p-3 sm:p-4 outline-none resize-y border-none"
             spellCheck={false}
@@ -256,9 +256,23 @@ export function CourseDetailPage() {
   const [paused, setPaused] = useState(false);
   const [newBadges, setNewBadges] = useState<string[]>([]);
   const [issuingCertificate, setIssuingCertificate] = useState(false);
+  const [nextCourseId, setNextCourseId] = useState<string | null>(null);
+  const [nextCourse, setNextCourse] = useState<any>(null);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [noteText, setNoteText] = useState('');
   const [quizState, setQuizState] = useState<QuizState | null>(null);
+  const [aiQuiz, setAiQuiz] = useState<any>(null);
+  const [aiQuizLoading, setAiQuizLoading] = useState(false);
+  const [aiQuizAnswers, setAiQuizAnswers] = useState<Record<number,number>>({});
+  const [aiQuizCount, setAiQuizCount] = useState(5);
+  const [aiQuizIndex, setAiQuizIndex] = useState(0);
+  const [aiQuizOpen, setAiQuizOpen] = useState(false);
+  const [completionQuiz, setCompletionQuiz] = useState<any>(null);
+  const [completionQuizOpen, setCompletionQuizOpen] = useState(false);
+  const [completionQuizIndex, setCompletionQuizIndex] = useState(0);
+  const [completionQuizAnswers, setCompletionQuizAnswers] = useState<Record<number,number>>({});
+    const [ytVideo, setYtVideo] = useState<any>(null);
+  const [ytLoading, setYtLoading] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   useEffect(() => {
     const load = async () => {
@@ -384,13 +398,56 @@ export function CourseDetailPage() {
     }
   };
   const closeQuiz = () => { setQuizState(null); goNext(); };
-  const markComplete = async () => {
+  const fetchPlayCircleVideo = async () => {
+    if (!currentLesson) return;
+    setYtLoading(true);
+    setYtVideo(null);
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(currentLesson.title || 'programming tutorial')}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+      });
+      const data = await res.json();
+      setYtVideo(data);
+    } catch {
+      showToast('Could not find a video', 'error');
+    } finally {
+      setYtLoading(false);
+    }
+  };
+  const generateAIQuiz = async () => {
+    if (!currentLesson) return;
+    setAiQuizLoading(true);
+    setAiQuiz(null);
+    setAiQuizAnswers({});
+    try {
+      const result = await quizService.generateAIQuiz(
+        currentLesson.title || 'Lesson',
+        currentLesson.content || currentLesson.title || 'Programming concepts',
+        aiQuizCount
+      );
+      setAiQuiz(result);
+      setAiQuizIndex(0);
+      setAiQuizOpen(true);
+    } catch {
+      showToast('Failed to generate quiz', 'error');
+    } finally {
+      setAiQuizLoading(false);
+    }
+  };
+  const doMarkComplete = async () => {
     if (!currentLesson || marking) return;
     setMarking(true);
     try {
       const result = await progressService.completeLesson(id!, lessonId);
       setCompletedLessons(prev => new Set([...prev, lessonId]));
       setProgress(result.progress);
+      if (result.nextCourseId) {
+        setNextCourseId(result.nextCourseId);
+        try {
+          const nc = await courseService.getCourseById(result.nextCourseId);
+          setNextCourse(nc);
+        } catch { /* non-critical */ }
+      }
       if (result.newBadges?.length > 0) {
         setNewBadges(result.newBadges);
         showToast('Badge earned: ' + result.newBadges.join(', ') + '!', 'success');
@@ -408,6 +465,27 @@ export function CourseDetailPage() {
       showToast(err?.response?.data?.message || 'Failed to mark complete', 'error');
     } finally {
       setMarking(false);
+    }
+  };
+  const markComplete = async () => {
+    if (!currentLesson || marking) return;
+    setCompletionQuizLoading(true);
+    setCompletionQuiz(null);
+    setCompletionQuizAnswers({});
+    setCompletionQuizIndex(0);
+    try {
+      const result = await quizService.generateAIQuiz(
+        currentLesson.title || 'Lesson',
+        currentLesson.content || currentLesson.title || 'Programming concepts',
+        15
+      );
+      setCompletionQuiz(result);
+      setCompletionQuizOpen(true);
+    } catch {
+      showToast('Could not generate quiz, marking complete anyway', 'error');
+      await doMarkComplete();
+    } finally {
+      setCompletionQuizLoading(false);
     }
   };
   const togglePause = useCallback(() => {
@@ -559,7 +637,7 @@ export function CourseDetailPage() {
     haptic('medium');
 
     // Override speak to use premium voice
-    const originalSpeak = speak;
+
     const premiumSpeak = (idx: number) => {
       if (premiumVoice) {
         const origSpeechSynth = window.speechSynthesis.speak.bind(window.speechSynthesis);
@@ -708,7 +786,18 @@ export function CourseDetailPage() {
               </button>
               <div className="min-w-0">
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentModule?.title}</p>
-                <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">{currentLesson?.title}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">{currentLesson?.title}</h1>
+                  {course?.level && (
+                    <span className={{
+                      beginner: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 shrink-0',
+                      intermediate: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 shrink-0',
+                      advanced: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 shrink-0',
+                    }[course.level as string] || 'text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 shrink-0'}>
+                      {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -750,22 +839,40 @@ export function CourseDetailPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm mb-6">
             {progress === 100 && (
               <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <Award className="text-green-600" size={24} />
-                    <div>
-                      <p className="font-semibold text-green-800 dark:text-green-300">Course complete</p>
-                      <p className="text-sm text-green-700 dark:text-green-400">Generate your verified PUGI certificate.</p>
+                {nextCourseId && nextCourse ? (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="text-yellow-500" size={24} />
+                      <div>
+                        <p className="font-semibold text-green-800 dark:text-green-300">🎉 Course complete! Next level unlocked</p>
+                        <p className="text-sm text-green-700 dark:text-green-400">{nextCourse.title} · {nextCourse.level}</p>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => navigate(`/learner/courses/${nextCourseId}`)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Start Next Course →
+                    </button>
                   </div>
-                  <button
-                    onClick={issueCertificate}
-                    disabled={issuingCertificate}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                  >
-                    <Award size={16} /> {issuingCertificate ? 'Generating...' : 'Generate Certificate'}
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <Award className="text-green-600" size={24} />
+                      <div>
+                        <p className="font-semibold text-green-800 dark:text-green-300">Course complete 🏆</p>
+                        <p className="text-sm text-green-700 dark:text-green-400">Generate your verified PUGI certificate.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={issueCertificate}
+                      disabled={issuingCertificate}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      <Award size={16} /> {issuingCertificate ? 'Generating...' : 'Generate Certificate'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {currentLesson?.content ? renderContent(currentLesson.content) : (
@@ -796,6 +903,302 @@ export function CourseDetailPage() {
               />
             </div>
           )}
+          {/* YouTube Video Suggestion */}
+          <div data-no-read="true" className="mb-6 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PlayCircle size={16} className="text-red-500" />
+                <span className="text-sm font-medium text-gray-900 dark:text-white">Prefer watching?</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Get a YouTube video for this lesson.</span>
+              </div>
+              <button
+                onClick={fetchPlayCircleVideo}
+                disabled={ytLoading}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+              >
+                <PlayCircle size={12} />
+                {ytLoading ? 'Searching...' : 'Get Video'}
+              </button>
+            </div>
+            {ytVideo?.videoId && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{ytVideo.title} · {ytVideo.channel}</p>
+                  <button onClick={() => setYtVideo(null)} className="ml-2 text-gray-400 hover:text-gray-600 flex-shrink-0">
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="overflow-hidden rounded-xl bg-black aspect-video">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytVideo.videoId}?autoplay=1`}
+                    title={ytVideo.title}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          {/* AI Quiz Generator */}
+          <div data-no-read="true" className="mb-6 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
+                <Brain size={16} className="text-purple-500" /> AI Quiz
+              </h3>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-500 dark:text-gray-400">Questions:</label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={20}
+                    value={aiQuizCount}
+                    onChange={e => setAiQuizCount(Math.max(5, Math.min(20, Number(e.target.value))))}
+                    className="w-14 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent px-2 py-1 text-xs text-center text-gray-900 dark:text-white"
+                  />
+                </div>
+                <button
+                  onClick={generateAIQuiz}
+                  disabled={aiQuizLoading}
+                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+                >
+                  <Sparkles size={12} />
+                  {aiQuizLoading ? 'Generating...' : 'Generate Quiz'}
+                </button>
+              </div>
+            </div>
+            {!aiQuiz && !aiQuizLoading && (
+              <p className="text-sm text-gray-400">Click generate to get AI-powered questions based on this lesson.</p>
+            )}
+            {aiQuizLoading && (
+              <div className="flex items-center gap-2 text-sm text-gray-400 py-4 justify-center">
+                <Loader /> Generating questions...
+              </div>
+            )}
+            {aiQuiz && !aiQuizLoading && (
+              <button
+                onClick={() => { setAiQuizIndex(0); setAiQuizAnswers({}); setAiQuizOpen(true); }}
+                className="text-xs text-purple-500 hover:underline"
+              >
+                Retake quiz ({aiQuiz.questions.length} questions)
+              </button>
+            )}
+          </div>
+          {/* Completion Quiz Modal */}
+          {completionQuizOpen && completionQuiz?.questions && (() => {
+            const questions = completionQuiz.questions;
+            const total = questions.length;
+            const isDone = completionQuizIndex >= total;
+            const passed = Object.values(completionQuizAnswers).filter((ans, qi) => ans === questions[qi]?.correctOptionIndex).length;
+            const score = isDone ? Math.round((passed / total) * 100) : 0;
+            const passingScore = 70;
+            const didPass = score >= passingScore;
+            const q = !isDone ? questions[completionQuizIndex] : null;
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+                <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
+                  {!isDone ? (
+                    <div className="px-6 pt-6 pb-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-blue-500">Lesson Quiz · {completionQuizIndex + 1} of {total}</span>
+                        <span className="text-xs text-gray-400">Pass {passingScore}% to complete</span>
+                      </div>
+                      <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mb-4">
+                        <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{width: `${(completionQuizIndex / total) * 100}%`}} />
+                      </div>
+                      <p className="text-base font-semibold text-gray-900 dark:text-white mb-4">{q.prompt}</p>
+                      <div className="space-y-2">
+                        {q.options.map((opt: string, oi: number) => {
+                          const answered = completionQuizAnswers[completionQuizIndex] !== undefined;
+                          const isSelected = completionQuizAnswers[completionQuizIndex] === oi;
+                          return (
+                            <button
+                              key={oi}
+                              onClick={() => {
+                                if (answered) return;
+                                setCompletionQuizAnswers(a => ({...a, [completionQuizIndex]: oi}));
+                                setTimeout(() => setCompletionQuizIndex(i => i + 1), 900);
+                              }}
+                              className={`w-full text-left text-sm px-4 py-3 rounded-xl border-2 transition-all
+                                ${!answered ? 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                                : isSelected ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                : 'border-gray-200 dark:border-gray-700 opacity-40'}`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-6 py-8 text-center">
+                      <div className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold
+                        ${didPass ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 dark:bg-red-900/30 text-red-500'}`}>
+                        {score}%
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        {didPass ? 'Lesson Complete! 🎉' : 'Not quite there yet'}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                        You got <span className="font-semibold text-gray-900 dark:text-white">{passed}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{total}</span> correct
+                      </p>
+                      {!didPass && (
+                        <p className="text-sm text-red-500 mb-4">
+                          You need <span className="font-bold">{passingScore}%</span> to pass. You scored <span className="font-bold">{score}%</span> — just {passingScore - score}% more needed.
+                        </p>
+                      )}
+                      <div className="grid grid-cols-3 gap-3 mb-6">
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                          <p className="text-xs text-gray-400 mb-1">Score</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{score}%</p>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-3">
+                          <p className="text-xs text-gray-400 mb-1">Correct</p>
+                          <p className="text-lg font-bold text-green-600">{passed}</p>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+                          <p className="text-xs text-gray-400 mb-1">Wrong</p>
+                          <p className="text-lg font-bold text-red-500">{total - passed}</p>
+                        </div>
+                      </div>
+                      {didPass ? (
+                        <button
+                          onClick={() => { setCompletionQuizOpen(false); doMarkComplete(); }}
+                          className="w-full rounded-xl bg-green-600 py-3 text-sm font-medium text-white hover:bg-green-700"
+                        >
+                          Continue to next lesson
+                        </button>
+                      ) : (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => { setCompletionQuizIndex(0); setCompletionQuizAnswers({}); }}
+                            className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          >
+                            Try Again
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setCompletionQuizOpen(false);
+                              // Unmark lesson as complete
+                              try {
+                                const result = await progressService.uncompleteLesson(id!, lessonId);
+                                setCompletedLessons(new Set());
+                                setProgress(result.progress ?? 0);
+                              } catch {
+                                showToast('Failed to reset progress', 'error');
+                              }
+                              goToLesson(0, 0);
+                            }}
+                            className="flex-1 rounded-xl bg-red-500 py-2 text-sm font-medium text-white hover:bg-red-600"
+                          >
+                            Restart Module 1
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+          {/* AI Quiz Modal */}
+          {aiQuizOpen && aiQuiz?.questions && (() => {
+            const questions = aiQuiz.questions;
+            const total = questions.length;
+            const isDone = aiQuizIndex >= total;
+            const passed = Object.values(aiQuizAnswers).filter((ans, qi) => ans === questions[qi]?.correctOptionIndex).length;
+            const score = isDone ? Math.round((passed / total) * 100) : 0;
+            const q = !isDone ? questions[aiQuizIndex] : null;
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
+                  {!isDone ? (
+                    <>
+                      <div className="px-6 pt-6 pb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-purple-500">Question {aiQuizIndex + 1} of {total}</span>
+                          <button onClick={() => setAiQuizOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+                        </div>
+                        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mb-4">
+                          <div className="bg-purple-500 h-1.5 rounded-full transition-all" style={{width: `${((aiQuizIndex) / total) * 100}%`}} />
+                        </div>
+                        <p className="text-base font-semibold text-gray-900 dark:text-white mb-4">{q.prompt}</p>
+                        <div className="space-y-2">
+                          {q.options.map((opt: string, oi: number) => {
+                            const answered = aiQuizAnswers[aiQuizIndex] !== undefined;
+                            const isSelected = aiQuizAnswers[aiQuizIndex] === oi;
+                            const isCorrect = oi === q.correctOptionIndex;
+                            return (
+                              <button
+                                key={oi}
+                                onClick={() => {
+                                  if (answered) return;
+                                  setAiQuizAnswers(a => ({...a, [aiQuizIndex]: oi}));
+                                  setTimeout(() => setAiQuizIndex(i => i + 1), 900);
+                                }}
+                                className={`w-full text-left text-sm px-4 py-3 rounded-xl border-2 transition-all
+                                  ${!answered ? 'border-gray-200 dark:border-gray-700 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                                  : isCorrect ? 'border-green-400 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                                  : isSelected ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                                  : 'border-gray-200 dark:border-gray-700 opacity-40'}`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {aiQuizAnswers[aiQuizIndex] !== undefined && q.explanation && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 italic">{q.explanation}</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="px-6 py-8 text-center">
+                      <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold
+                        ${score >= 70 ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 dark:bg-red-900/30 text-red-500'}`}>
+                        {score}%
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        {score >= 70 ? 'Great job! 🎉' : 'Keep practicing!'}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        You got <span className="font-semibold text-gray-900 dark:text-white">{passed}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{total}</span> correct
+                      </p>
+                      <div className="grid grid-cols-3 gap-3 mb-6">
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                          <p className="text-xs text-gray-400 mb-1">Score</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{score}%</p>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-3">
+                          <p className="text-xs text-gray-400 mb-1">Correct</p>
+                          <p className="text-lg font-bold text-green-600">{passed}</p>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+                          <p className="text-xs text-gray-400 mb-1">Wrong</p>
+                          <p className="text-lg font-bold text-red-500">{total - passed}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => { setAiQuizIndex(0); setAiQuizAnswers({}); }}
+                          className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          Retry
+                        </button>
+                        <button
+                          onClick={() => setAiQuizOpen(false)}
+                          className="flex-1 rounded-xl bg-purple-600 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
           {/* Downloads */}
           {currentLesson?.downloads?.length > 0 && (
             <div className="mb-6 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">

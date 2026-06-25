@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { ToastContainer } from '@/components/ui/Toast';
 import { AppRoutes } from '@/routes/AppRoutes';
+import { InstallPWA } from '@/components/InstallPWA';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <ToastProvider>
             <AppRoutes />
             <ToastContainer />
+            <InstallPWA />
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>

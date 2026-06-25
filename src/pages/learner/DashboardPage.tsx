@@ -23,6 +23,20 @@ interface EnrollmentEntry {
   lastAccessed: string;
 }
 
+const getCategoryColor = (category: string): string => {
+  const colors: Record<string, string> = {
+    'Game Dev': '#22c55e',
+    'Blockchain': '#6366f1',
+    'Cloud': '#f59e0b',
+    'Web Dev': '#3b82f6',
+    'Mobile': '#ec4899',
+    'AI/ML': '#8b5cf6',
+    'DevOps': '#14b8a6',
+    'Data Science': '#f97316',
+  };
+  return colors[category] ?? '#6366f1';
+};
+
 export function LearnerDashboardPage() {
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
@@ -135,11 +149,20 @@ export function LearnerDashboardPage() {
               to={`/learner/courses/${course._id}`}
               className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
             >
-              <img
-                src={course.thumbnail || 'https://placehold.co/400x200?text=Course'}
-                alt={course.title}
-                className="w-full h-36 object-cover"
-              />
+              {course.thumbnail ? (
+                <img
+                  src={course.thumbnail}
+                  alt={course.title}
+                  className="w-full h-36 object-cover"
+                />
+              ) : (
+                <div
+                  className="w-full h-36 flex items-center justify-center text-white text-2xl font-bold"
+                  style={{ backgroundColor: getCategoryColor(course.category) }}
+                >
+                  {course.category}
+                </div>
+              )}
               <div className="p-4">
                 <span className="text-xs font-medium text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
                   {course.category}

@@ -5,7 +5,7 @@ const normalizeCourses = (courses: any[]) => courses.map(normalizeCourse);
 
 export const courseService = {
   // All published courses (explore page)
-  async getAllCourses(params?: { search?: string; category?: string; level?: string }) {
+  async getAllCourses(params?: { search?: string; category?: string; level?: string; minLevel?: string }) {
     const { data } = await api.get('/courses', { params });
     return normalizeCourses(data); // Course[]
   },

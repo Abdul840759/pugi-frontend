@@ -11,6 +11,8 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
+import { GoogleSuccessPage } from '@/pages/auth/GoogleSuccessPage';
+import OnboardingPage from '@/pages/auth/OnboardingPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 import { LearnerDashboardPage } from '@/pages/learner/DashboardPage';
@@ -20,6 +22,7 @@ import { LearnerProgressPage } from '@/pages/learner/ProgressPage';
 import { LearnerMessagesPage } from '@/pages/learner/MessagesPage';
 import { LearnerSettingsPage } from '@/pages/learner/SettingsPage';
 import { JotsPage } from '@/pages/learner/JotsPage';
+import { CertificatesPage } from '@/pages/learner/CertificatesPage';
 
 import { TutorDashboardPage } from '@/pages/tutor/DashboardPage';
 import { CreateCoursePage } from '@/pages/tutor/CreateCoursePage';
@@ -58,6 +61,8 @@ export function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/google/success" element={<GoogleSuccessPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['learner']} />}>
@@ -69,6 +74,7 @@ export function AppRoutes() {
           <Route path="/learner/messages" element={<LearnerMessagesPage />} />
           <Route path="/learner/settings" element={<LearnerSettingsPage />} />
           <Route path="/learner/jots" element={<JotsPage />} />
+          <Route path="/learner/certificates" element={<CertificatesPage />} />
         </Route>
       </Route>
 

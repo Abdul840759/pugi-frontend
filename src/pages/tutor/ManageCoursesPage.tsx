@@ -82,7 +82,21 @@ export function ManageCoursesPage() {
                   {course.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">{course.category} · {course.level} · {course.duration}</p>
+              <p className="mt-1 text-sm text-slate-500 flex items-center gap-2 flex-wrap">
+                <span>{course.category}</span>
+                <span>·</span>
+                {course.level && (
+                  <span className={{
+                    beginner: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400',
+                    intermediate: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400',
+                    advanced: 'text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+                  }[course.level as 'beginner' | 'intermediate' | 'advanced'] ?? 'text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500'}>
+                    {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
+                  </span>
+                )}
+                <span>·</span>
+                <span>{course.duration}</span>
+              </p>
               <div className="mt-2 flex items-center gap-4 text-sm text-slate-500">
                 <span className="flex items-center gap-1"><Users className="h-4 w-4" />{course.enrolledCount} students</span>
                 <span>Rating: {course.rating}</span>

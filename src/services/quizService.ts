@@ -15,4 +15,8 @@ export const quizService = {
     const { data } = await api.get('/quizzes/history/me');
     return data;
   },
+  async generateAIQuiz(lessonTitle: string, lessonContent: string, count: number = 5) {
+    const { data } = await api.post('/quizzes/generate', { lessonTitle, lessonContent, count });
+    return data;
+  },
 };

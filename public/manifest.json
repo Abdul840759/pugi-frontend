@@ -1,0 +1,17 @@
+{
+  "name": "PUGI LMS",
+  "short_name": "PUGI",
+  "description": "Learn, grow, and earn certificates with PUGI LMS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "lang": "en",
+  "scope": "/",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "pugi-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "pugi-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "pugi-icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

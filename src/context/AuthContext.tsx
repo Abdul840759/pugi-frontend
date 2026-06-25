@@ -8,6 +8,8 @@ export interface AuthUser {
   email: string;
   role: 'learner' | 'tutor' | 'admin';
   avatar?: string;
+  techLevel?: 'beginner' | 'intermediate' | 'advanced';
+  onboardingComplete?: boolean;
 }
 
 interface AuthContextType {
@@ -60,8 +62,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const data = await authService.login({ email, password });
     storage.setAccessToken(data.accessToken);
     storage.setRefreshToken(data.refreshToken);
-    storage.setUser(data.user);
-    setUser(data.user);
+    const fullUser = await authService.me();
+    storage.setUser(fullUser);
+    setUser(fullUser);
   };
 
   const register = async (
@@ -78,8 +81,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const data = await authService.verifyEmail(email, otp);
     storage.setAccessToken(data.accessToken);
     storage.setRefreshToken(data.refreshToken);
-    storage.setUser(data.user);
-    setUser(data.user);
+    const fullUser = await authService.me();
+    storage.setUser(fullUser);
+    setUser(fullUser);
   };
 
   const logout = async () => {
