@@ -229,7 +229,7 @@ export function LearnerCoursesPage() {
               acc[key].push(course);
               return acc;
             }, {})
-          ).map(([cat, catCourses]: [string, any]) => {
+          ).map(([_cat, catCourses]: [string, any]) => {
             const levelOrder = ['beginner', 'intermediate', 'advanced'];
             const sorted = [...catCourses].sort((a, b) => levelOrder.indexOf(a.level) - levelOrder.indexOf(b.level));
             const topCourse = sorted[0];

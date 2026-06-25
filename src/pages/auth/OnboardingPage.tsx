@@ -87,7 +87,7 @@ export default function OnboardingPage() {
   const [result, setResult] = useState<'beginner' | 'intermediate' | 'advanced' | null>(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
-  const { updateUser, user } = useAuthContext();
+  const { updateUser, user: _user } = useAuthContext();
   const { showToast } = useToast();
 
   const handleNext = () => {

@@ -271,6 +271,7 @@ export function CourseDetailPage() {
   const [completionQuizOpen, setCompletionQuizOpen] = useState(false);
   const [completionQuizIndex, setCompletionQuizIndex] = useState(0);
   const [completionQuizAnswers, setCompletionQuizAnswers] = useState<Record<number,number>>({});
+  const [_completionQuizLoading, setCompletionQuizLoading] = useState(false);
     const [ytVideo, setYtVideo] = useState<any>(null);
   const [ytLoading, setYtLoading] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
