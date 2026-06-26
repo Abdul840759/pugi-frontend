@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Map, ChevronRight, Lock, CheckCircle, Circle, BookOpen, Loader2 } from 'lucide-react';
+import { Map, ChevronRight, Lock, CheckCircle, BookOpen, Loader2 } from 'lucide-react';
 import { roadmapService } from '@/services/roadmapService';
 import { useToast } from '@/hooks/useToast';
 
