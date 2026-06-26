@@ -97,7 +97,7 @@ export function LearnerCoursesPage() {
     try {
       await courseService.enrollInCourse(courseId);
       setEnrolled((prev) => new Set([...prev, courseId]));
-      showToast('Enrolled successfully! 🎉', 'success');
+      showToast('Enrolled successfully!', 'success');
     } catch (err: any) {
       const code = err?.response?.data?.code;
       if (code === 'FREE_PLAN_LIMIT' || code === 'LEVEL_MISMATCH') {
@@ -327,7 +327,7 @@ export function LearnerCoursesPage() {
                             }`}
                         >
                           {isEnrolled
-                            ? '✓ Enrolled'
+                            ? 'Enrolled'
                             : enrolling === course._id
                             ? 'Enrolling...'
                             : 'Enroll Now'}

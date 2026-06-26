@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CheckCircle, Circle, Volume2, VolumeX, BookOpen,
   Award, Download, Bookmark, BookmarkCheck, Trophy, XCircle, StickyNote,
-  Copy, Check, Play, Terminal, Menu, X, Brain, Sparkles, PlayCircle, Lock,
+  Copy, Check, Play, Terminal, Menu, X, Brain, PlayCircle, Lock,
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { progressService } from '@/services/progressService';
@@ -41,7 +41,7 @@ function DiagramBlock({ code }: { code: string }) {
   return (
     <div className="my-4 rounded-xl overflow-hidden border border-gray-700 shadow-lg max-w-full">
       <div className="flex items-center gap-2 bg-gray-800 px-4 py-2">
-        <span className="text-xs text-blue-400 font-semibold">📊 Diagram</span>
+        <span className="text-xs text-blue-400 font-semibold">Diagram</span>
       </div>
       <div ref={ref} className="bg-gray-900 p-6 flex justify-center overflow-x-auto" />
 
@@ -71,7 +71,7 @@ function BrowserPreview({ code }: { code: string }) {
             <div className="w-3 h-3 rounded-full bg-yellow-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
-          <span className="text-xs text-blue-600 dark:text-blue-300 font-semibold ml-2">🌐 Browser Preview</span>
+          <span className="text-xs text-blue-600 dark:text-blue-300 font-semibold ml-2">Browser Preview</span>
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -596,7 +596,7 @@ export function CourseDetailPage() {
         setSpeaking(false);
         setPaused(false);
         if (!stopped) {
-          showToast('🎉 Read aloud complete! Great job studying this lesson.', 'success');
+          showToast('Read aloud complete! Great job studying this lesson.', 'success');
         }
         return;
       }
@@ -772,7 +772,6 @@ export function CourseDetailPage() {
               onClick={() => setUpgradeModalReason('FREE_PLAN_LIMIT')}
               className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium"
             >
-              <Sparkles size={14} />
               Upgrade to Pro
             </button>
           )}
@@ -926,7 +925,7 @@ export function CourseDetailPage() {
                     <div className="flex items-center gap-3">
                       <Trophy className="text-yellow-500" size={24} />
                       <div>
-                        <p className="font-semibold text-green-800 dark:text-green-300">🎉 Course complete! Next level unlocked</p>
+                        <p className="font-semibold text-green-800 dark:text-green-300">Course complete! Next level unlocked</p>
                         <p className="text-sm text-green-700 dark:text-green-400">{nextCourse.title} · {nextCourse.level}</p>
                       </div>
                     </div>
@@ -942,7 +941,7 @@ export function CourseDetailPage() {
                     <div className="flex items-center gap-3">
                       <Award className="text-green-600" size={24} />
                       <div>
-                        <p className="font-semibold text-green-800 dark:text-green-300">Course complete 🏆</p>
+                        <p className="font-semibold text-green-800 dark:text-green-300">Course complete</p>
                         <p className="text-sm text-green-700 dark:text-green-400">Generate your verified PUGI certificate.</p>
                       </div>
                     </div>
@@ -1045,7 +1044,6 @@ export function CourseDetailPage() {
                   disabled={aiQuizLoading}
                   className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-50"
                 >
-                  <Sparkles size={12} />
                   {aiQuizLoading ? 'Generating...' : 'Generate Quiz'}
                 </button>
               </div>
@@ -1120,7 +1118,7 @@ export function CourseDetailPage() {
                         {score}%
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                        {didPass ? 'Lesson Complete! 🎉' : 'Not quite there yet'}
+                        {didPass ? 'Lesson Complete!' : 'Not quite there yet'}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                         You got <span className="font-semibold text-gray-900 dark:text-white">{passed}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{total}</span> correct
@@ -1242,7 +1240,7 @@ export function CourseDetailPage() {
                         {score}%
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                        {score >= 70 ? 'Great job! 🎉' : 'Keep practicing!'}
+                        {score >= 70 ? 'Great job!' : 'Keep practicing!'}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                         You got <span className="font-semibold text-gray-900 dark:text-white">{passed}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{total}</span> correct
@@ -1367,7 +1365,7 @@ export function CourseDetailPage() {
           <div className="sm:hidden fixed right-3 top-1/2 -translate-y-1/2 z-[200] flex flex-col items-center gap-2">
             {/* Status badge */}
             <div className="bg-blue-600/90 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg border border-blue-400/50 ring-1 ring-white/20">
-              {paused ? '⏸ Paused' : '🔊 Reading'}
+              {paused ? 'Paused' : 'Reading'}
             </div>
             {/* Pause/Resume button */}
             <button onClick={togglePause}

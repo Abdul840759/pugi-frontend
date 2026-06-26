@@ -76,7 +76,7 @@ export function RoadmapsPage() {
         {/* Header */}
         <div className={`rounded-2xl bg-gradient-to-br ${gradient} p-6 text-white`}>
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">{selected.icon || '🗺️'}</span>
+            <span className="text-3xl">{selected.icon || '—'}</span>
             <h1 className="text-2xl font-bold">{selected.title}</h1>
           </div>
           {selected.description && (
@@ -228,7 +228,7 @@ export function RoadmapsPage() {
                 className="text-left bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
               >
                 <div className={`bg-gradient-to-br ${gradient} p-5 text-white`}>
-                  <span className="text-3xl">{roadmap.icon || '🗺️'}</span>
+                  <span className="text-3xl">{roadmap.icon || '—'}</span>
                   <h2 className="mt-2 font-bold text-lg leading-tight">{roadmap.title}</h2>
                   {roadmap.category && (
                     <span className="text-xs text-white/70">{roadmap.category}</span>

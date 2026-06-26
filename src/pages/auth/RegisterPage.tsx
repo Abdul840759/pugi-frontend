@@ -69,7 +69,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await verifyEmail(email, otp);
-      showToast('Email verified! Welcome to PUGI 🎉', 'success');
+      showToast('Email verified! Welcome to PUGI', 'success');
       const stored = localStorage.getItem('pugi_user');
       const user   = stored ? JSON.parse(stored) : null;
       navigate(user ? ROLE_PATH[user.role] ?? '/learner/dashboard' : '/learner/dashboard');

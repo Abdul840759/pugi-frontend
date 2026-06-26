@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, Sparkles, ArrowUpCircle, Loader2 } from 'lucide-react';
+import { Lock, ArrowUpCircle, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { paymentService } from '@/services/paymentService';
 import { loadPaystackScript } from '@/utils/loadPaystackScript';
@@ -90,7 +90,6 @@ export function UpgradeLimitModal({ isOpen, onClose, reason, onUpgraded }: Upgra
         <p className="text-sm text-slate-600 dark:text-slate-300">{copy.body}</p>
         <div className="w-full rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-left text-white">
           <p className="flex items-center gap-1.5 text-sm font-semibold">
-            <Sparkles size={15} />
             PUGI Pro — ₦2,500/month
           </p>
           <ul className="mt-2 space-y-1 text-xs text-blue-50">

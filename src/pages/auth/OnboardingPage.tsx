@@ -131,7 +131,6 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🎯</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Let's find your level</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
             Answer {questions.length} quick questions so we can personalise your learning path.

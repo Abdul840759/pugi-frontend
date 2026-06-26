@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, TrendingUp, Settings, StickyNote, Award,
-  Map, Sparkles, ArrowUpCircle, Video,
+  Map, ArrowUpCircle, Video,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
@@ -32,7 +32,6 @@ export function LearnerLayout() {
       className="flex w-full flex-col gap-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3 text-left text-white transition-transform hover:scale-[1.02]"
     >
       <span className="flex items-center gap-1.5 text-sm font-semibold">
-        <Sparkles size={15} />
         Upgrade to Pro
       </span>
       <span className="text-xs text-blue-50">

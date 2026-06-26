@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Flame, Star, Trophy, TrendingUp, Play, Sparkles, ArrowUpCircle } from 'lucide-react';
+import { BookOpen, Flame, Star, Trophy, TrendingUp, Play, ArrowUpCircle } from 'lucide-react';
 import { useAuthContext } from '@/context/AuthContext';
 import { progressService } from '@/services/progressService';
 import { courseService } from '@/services/courseService';
@@ -115,7 +115,7 @@ export function LearnerDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {isFirstVisit ? 'Welcome to PUGI LMS 👋' : `Welcome back, ${user?.name?.split(' ')[0]} 👋`}
+            {isFirstVisit ? 'Welcome to PUGI LMS' : `Welcome back, ${user?.name?.split(' ')[0]}`}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             {isFirstVisit ? 'We are excited to have you here. Start your learning journey today!' : motivMsg}
@@ -131,7 +131,6 @@ export function LearnerDashboardPage() {
           )}
           {isPro ? (
             <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm">
-              <Sparkles size={12} />
               PUGI Pro
             </span>
           ) : (
