@@ -24,6 +24,7 @@ import { LearnerSettingsPage } from '@/pages/learner/SettingsPage';
 import { JotsPage } from '@/pages/learner/JotsPage';
 import { CertificatesPage } from '@/pages/learner/CertificatesPage';
 import { RoadmapsPage } from '@/pages/learner/RoadmapsPage';
+import { LiveClassesPage } from '@/pages/learner/LiveClassesPage';
 
 import { TutorDashboardPage } from '@/pages/tutor/DashboardPage';
 import { CreateCoursePage } from '@/pages/tutor/CreateCoursePage';
@@ -77,6 +78,7 @@ export function AppRoutes() {
           <Route path="/learner/jots" element={<JotsPage />} />
           <Route path="/learner/certificates" element={<CertificatesPage />} />
           <Route path="/learner/roadmaps" element={<RoadmapsPage />} />
+          <Route path="/learner/live-classes" element={<LiveClassesPage />} />
         </Route>
       </Route>
 

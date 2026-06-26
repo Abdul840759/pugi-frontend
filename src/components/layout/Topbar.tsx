@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, Bell, Sun, Moon, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -14,6 +14,13 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -21,7 +28,7 @@ export function Topbar({ onMenuClick, title }: TopbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-3 sm:px-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80 lg:px-6">
+    <header className={`sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 lg:px-6 transition-all duration-300 ${scrolled ? 'border-b border-slate-200 bg-white/90 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/90 shadow-sm' : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-b border-transparent'}`}>
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, TrendingUp, Settings, StickyNote, Award,
-  Map, Sparkles, ArrowUpCircle,
+  Map, Sparkles, ArrowUpCircle, Video,
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
@@ -20,6 +20,7 @@ export function LearnerLayout() {
     { label: 'Courses', path: '/learner/courses', icon: BookOpen },
     { label: 'Progress', path: '/learner/progress', icon: TrendingUp },
     ...(isPro ? [{ label: 'Roadmaps', path: '/learner/roadmaps', icon: Map }] : []),
+    ...(isPro ? [{ label: 'Live Classes', path: '/learner/live-classes', icon: Video }] : []),
     { label: 'My Jots', path: '/learner/jots', icon: StickyNote },
     { label: 'Certificates', path: '/learner/certificates', icon: Award },
     { label: 'Settings', path: '/learner/settings', icon: Settings },
