@@ -26,7 +26,6 @@ import { JotsPage } from '@/pages/learner/JotsPage';
 import { CertificatesPage } from '@/pages/learner/CertificatesPage';
 import { RoadmapsPage } from '@/pages/learner/RoadmapsPage';
 import { LiveClassesPage } from '@/pages/learner/LiveClassesPage';
-import { UpgradePage } from '@/pages/learner/UpgradePage';
 
 import { TutorDashboardPage } from '@/pages/tutor/DashboardPage';
 import { CreateCoursePage } from '@/pages/tutor/CreateCoursePage';
@@ -84,7 +83,6 @@ export function AppRoutes() {
           <Route path="/learner/certificates" element={<CertificatesPage />} />
           <Route path="/learner/roadmaps" element={<RoadmapsPage />} />
           <Route path="/learner/live-classes" element={<LiveClassesPage />} />
-          <Route path="/upgrade" element={<UpgradePage />} />
         </Route>
       </Route>
 
