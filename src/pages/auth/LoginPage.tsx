@@ -6,12 +6,6 @@ import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
-const DEMO_USERS = [
-  { label: 'Learner', email: 'learner@pugi.com', password: 'password123' },
-  { label: 'Tutor',   email: 'tutor@pugi.com',   password: 'password123' },
-  { label: 'Admin',   email: 'admin@pugi.com',    password: 'password123' },
-];
-
 const ROLE_PATH: Record<string, string> = {
   learner: '/learner/dashboard',
   tutor:   '/tutor/dashboard',
@@ -28,20 +22,18 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e?: React.FormEvent, overrideEmail?: string, overridePassword?: string) => {
-    e?.preventDefault();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
-    const finalEmail = overrideEmail ?? email;
-    const finalPassword = overridePassword ?? password;
 
-    if (!finalEmail || !finalPassword) {
+    if (!email || !password) {
       setError('Please enter your email and password');
       return;
     }
 
     setLoading(true);
     try {
-      await login(finalEmail, finalPassword);
+      await login(email, password);
       showToast('Welcome back!', 'success');
       // login() updates context user synchronously via setUser before resolving,
       // but to be 100% safe we read directly from the just-returned promise chain
@@ -58,12 +50,6 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemo = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    handleLogin(undefined, demoEmail, demoPassword);
   };
 
   return (
@@ -108,25 +94,6 @@ export function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-
-          <div className="mt-6">
-            <p className="text-xs text-center text-gray-400 mb-3">Quick demo access</p>
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO_USERS.map((u) => (
-                <button
-                  key={u.label}
-                  onClick={() => handleDemo(u.email, u.password)}
-                  disabled={loading}
-                  className="text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-600
-                             text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20
-                             hover:border-blue-300 hover:text-blue-600 transition-colors disabled:opacity-50"
-                >
-                  {u.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
 
           {/* Google OAuth */}
           <div className="mt-4">
