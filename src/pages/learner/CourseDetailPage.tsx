@@ -3,13 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CheckCircle, Circle, Volume2, VolumeX, BookOpen,
   Award, Download, Bookmark, BookmarkCheck, Trophy, XCircle, StickyNote,
-  Copy, Check, Play, Terminal, Menu, X, Brain, Sparkles, PlayCircle,
+  Copy, Check, Play, Terminal, Menu, X, Brain, Sparkles, PlayCircle, Lock,
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { progressService } from '@/services/progressService';
 import { certificateService } from '@/services/certificateService';
 import { quizService } from '@/services/quizService';
 import { useToast } from '@/hooks/useToast';
+import { useAuthContext } from '@/context/AuthContext';
+import { UpgradeLimitModal, type UpgradeLimitReason } from '@/components/courses/UpgradeLimitModal';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Loader } from '@/components/ui/Loader';
 interface QuizState {
@@ -245,6 +247,7 @@ export function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user, refreshPlan } = useAuthContext();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeModule, setActiveModule] = useState(0);
@@ -275,6 +278,8 @@ export function CourseDetailPage() {
     const [ytVideo, setYtVideo] = useState<any>(null);
   const [ytLoading, setYtLoading] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null);
+  const [upgradeModalReason, setUpgradeModalReason] = useState<UpgradeLimitReason | null>(null);
   useEffect(() => {
     const load = async () => {
       try {
@@ -285,6 +290,14 @@ export function CourseDetailPage() {
         setCourse(courseData);
         setCompletedLessons(new Set(progressData.completedLessons || []));
         setProgress(progressData.progress || 0);
+        // Check enrollment
+        try {
+          const enrolledCourses = await courseService.getEnrolledCourses();
+          const enrolled = enrolledCourses.some((c: any) => c._id === id);
+          setIsEnrolled(enrolled);
+        } catch {
+          setIsEnrolled(false);
+        }
       } catch {
         showToast('Failed to load course', 'error');
         navigate('/learner/courses');
@@ -326,6 +339,15 @@ export function CourseDetailPage() {
     setSpeaking(false);
   }, []);
   const goToLesson = (modIdx: number, lesIdx: number) => {
+    // Free plan gate: only first lesson of the course is accessible
+    const isPro = user?.plan === 'pro';
+    const globalIdx = (course?.modules
+      ?.slice(0, modIdx)
+      .reduce((acc: number, m: any) => acc + m.lessons.length, 0) || 0) + lesIdx;
+    if (!isPro && globalIdx > 0) {
+      setUpgradeModalReason('FREE_PLAN_LIMIT');
+      return;
+    }
     stopSpeech();
     setActiveModule(modIdx);
     setActiveLesson(lesIdx);
@@ -334,7 +356,17 @@ export function CourseDetailPage() {
   };
   const goNext = () => {
     if (!course) return;
+    const isPro = user?.plan === 'pro';
     const mod = course.modules[activeModule];
+    const nextModIdx = activeLesson < mod.lessons.length - 1 ? activeModule : activeModule + 1;
+    const nextLesIdx = activeLesson < mod.lessons.length - 1 ? activeLesson + 1 : 0;
+    const globalIdx = (course?.modules
+      ?.slice(0, nextModIdx)
+      .reduce((acc: number, m: any) => acc + m.lessons.length, 0) || 0) + nextLesIdx;
+    if (!isPro && globalIdx > 0) {
+      setUpgradeModalReason('FREE_PLAN_LIMIT');
+      return;
+    }
     if (activeLesson < mod.lessons.length - 1) goToLesson(activeModule, activeLesson + 1);
     else if (activeModule < course.modules.length - 1) goToLesson(activeModule + 1, 0);
   };
@@ -470,6 +502,12 @@ export function CourseDetailPage() {
   };
   const markComplete = async () => {
     if (!currentLesson || marking) return;
+    // After completing lesson 0, free users hit the gate
+    const isPro = user?.plan === 'pro';
+    if (!isPro && currentLessonIndex === 0) {
+      // Let them complete lesson 0 but after completion show upgrade wall
+      // doMarkComplete handles the actual save; we just block goNext after
+    }
     setCompletionQuizLoading(true);
     setCompletionQuiz(null);
     setCompletionQuizAnswers({});
@@ -703,8 +741,51 @@ export function CourseDetailPage() {
       );
     });
   };
-  if (loading) return <div className="flex justify-center items-center h-64"><Loader /></div>;
+  if (loading || isEnrolled === null) return <div className="flex justify-center items-center h-64"><Loader /></div>;
   if (!course) return <div className="p-6 text-gray-500">Course not found.</div>;
+
+  // Gate: not enrolled
+  if (!isEnrolled) {
+    const isPro = user?.plan === 'pro';
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-6">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-500">
+          <Lock size={36} />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{course.title}</h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md">
+            {isPro
+              ? 'You are not enrolled in this course yet. Go back and enroll to access the content.'
+              : 'You need to enroll in this course to access its content. Free plan users can enroll in 1 course.'}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/learner/courses')}
+            className="px-5 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            Browse Courses
+          </button>
+          {!isPro && (
+            <button
+              onClick={() => setUpgradeModalReason('FREE_PLAN_LIMIT')}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium"
+            >
+              <Sparkles size={14} />
+              Upgrade to Pro
+            </button>
+          )}
+        </div>
+        <UpgradeLimitModal
+          isOpen={!!upgradeModalReason}
+          reason={upgradeModalReason}
+          onClose={() => setUpgradeModalReason(null)}
+          onUpgraded={() => { void refreshPlan(); navigate('/learner/courses'); }}
+        />
+      </div>
+    );
+  }
   return (
     <div className="relative flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden">
       {/* Mobile drawer backdrop */}
@@ -1302,6 +1383,13 @@ export function CourseDetailPage() {
         </>
       )}
       </main>
+      {/* Upgrade modal for lesson gate */}
+      <UpgradeLimitModal
+        isOpen={!!upgradeModalReason}
+        reason={upgradeModalReason}
+        onClose={() => setUpgradeModalReason(null)}
+        onUpgraded={() => { void refreshPlan(); }}
+      />
       {/* Quiz modal */}
       {quizState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
