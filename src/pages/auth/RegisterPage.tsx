@@ -48,7 +48,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await register(name, email, password, role);
-      showToast('Check the backend console for your OTP!', 'success');
+      showToast('Verification code sent to your email!', 'success');
       setStep('verify');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Registration failed');
@@ -176,8 +176,8 @@ export function RegisterPage() {
             <form onSubmit={handleVerify} className="space-y-4">
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-2">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  A 6-digit OTP has been printed to the <strong>backend console</strong>.
-                  Enter it below to verify your email.
+                  We sent a 6-digit code to your email.
+                  Enter it below to verify your account.
                 </p>
                 <p className="text-xs text-blue-500 mt-1">{email}</p>
               </div>
