@@ -115,10 +115,10 @@ export function LearnerDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {user?.name?.split(' ')[0]}
+            {isFirstVisit ? 'Welcome to PUGI LMS 👋' : `Welcome back, ${user?.name?.split(' ')[0]} 👋`}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Keep up the momentum, you are doing great!
+            {isFirstVisit ? 'We are excited to have you here. Start your learning journey today!' : motivMsg}
           </p>
         </div>
 

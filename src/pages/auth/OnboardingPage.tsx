@@ -82,18 +82,18 @@ const levelInfo = {
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    if (_user?.onboardingComplete) {
-      navigate('/learner/dashboard', { replace: true });
-    }
-  }, [_user]);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<'beginner' | 'intermediate' | 'advanced' | null>(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { updateUser, user: _user } = useAuthContext();
+
+  useEffect(() => {
+    if (_user?.onboardingComplete) {
+      navigate('/learner/dashboard', { replace: true });
+    }
+  }, [_user]);
   const { showToast } = useToast();
 
   const handleNext = () => {
