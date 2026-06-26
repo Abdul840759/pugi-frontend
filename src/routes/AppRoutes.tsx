@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AdminSessionRoute } from '@/components/AdminSessionRoute';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { LearnerLayout } from '@/layouts/LearnerLayout';
 import { TutorLayout } from '@/layouts/TutorLayout';
@@ -34,6 +35,7 @@ import { SchedulePage } from '@/pages/tutor/SchedulePage';
 import { AnalyticsPage } from '@/pages/tutor/AnalyticsPage';
 import { TutorSettingsPage } from '@/pages/tutor/SettingsPage';
 
+import { AdminGatePage } from '@/pages/admin/AdminGatePage';
 import { AdminDashboardPage } from '@/pages/admin/DashboardPage';
 import { UsersPage } from '@/pages/admin/UsersPage';
 import { TutorApprovalPage } from '@/pages/admin/TutorApprovalPage';
@@ -67,6 +69,8 @@ export function AppRoutes() {
         <Route path="/onboarding" element={<OnboardingPage />} />
       </Route>
 
+      <Route path="/admin" element={<AdminGatePage />} />
+
       <Route element={<ProtectedRoute allowedRoles={['learner']} />}>
         <Route element={<LearnerLayout />}>
           <Route path="/learner/dashboard" element={<LearnerDashboardPage />} />
@@ -94,7 +98,7 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+      <Route element={<AdminSessionRoute />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/users" element={<UsersPage />} />

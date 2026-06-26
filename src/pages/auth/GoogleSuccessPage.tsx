@@ -36,6 +36,14 @@ export function GoogleSuccessPage() {
     storage.setRefreshToken(refreshToken);
     storage.setUser(user);
     updateUser(user);
+
+    const adminRedirect = sessionStorage.getItem('pugi_post_login_redirect');
+    if (adminRedirect) {
+      sessionStorage.removeItem('pugi_post_login_redirect');
+      navigate(adminRedirect, { replace: true });
+      return;
+    }
+
     // Redirect to onboarding if learner hasn't completed it
     if (role === 'learner' && params.get('onboardingComplete') !== 'true') {
       navigate('/onboarding', { replace: true });
