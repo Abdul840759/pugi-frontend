@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,8 @@ import { APP_NAME, ROLE_DASHBOARD_PATH } from '@/utils/constants';
 export function PublicLayout() {
   const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+  const isOnboarding = location.pathname === '/onboarding';
 
   return (
     <div className="min-h-screen">
@@ -26,7 +28,7 @@ export function PublicLayout() {
             <button onClick={toggleTheme} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            {isAuthenticated && user ? (
+            {isAuthenticated && user && !isOnboarding ? (
               <Link to={ROLE_DASHBOARD_PATH[user.role]}>
                 <Button size="sm">Dashboard</Button>
               </Link>

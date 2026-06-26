@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Flame, Star, Trophy, TrendingUp, Play, Sparkles, ArrowUpCircle } from 'lucide-react';
 import { useAuthContext } from '@/context/AuthContext';
@@ -55,6 +55,32 @@ export function LearnerDashboardPage() {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   const isPro = user?.plan === 'pro';
+
+  const MESSAGES = [
+    'Keep up the momentum, you are doing great!',
+    'Every lesson brings you one step closer to your goals.',
+    'Consistency beats talent. Keep showing up!',
+    'You are building something amazing, one lesson at a time.',
+    'Great things take time. Stay focused and keep learning!',
+    'The best investment you can make is in yourself.',
+    'Progress, not perfection. You are on the right track!',
+    'Small steps every day lead to big results.',
+    'Your future self will thank you for learning today.',
+    'Keep going — the hardest part is showing up, and you did!',
+  ];
+
+  const isFirstVisit = !localStorage.getItem('pugi_visited');
+  const msgIndexRef = useRef(Math.floor(Math.random() * MESSAGES.length));
+  const [motivMsg, setMotivMsg] = useState(MESSAGES[msgIndexRef.current]);
+
+  useEffect(() => {
+    localStorage.setItem('pugi_visited', 'true');
+    const interval = setInterval(() => {
+      msgIndexRef.current = (msgIndexRef.current + 1) % MESSAGES.length;
+      setMotivMsg(MESSAGES[msgIndexRef.current]);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
   const skillLabel = user?.skillLevel ? SKILL_LEVEL_LABEL[user.skillLevel] : (user?.techLevel ? SKILL_LEVEL_LABEL[user.techLevel] : null);
 
   useEffect(() => {

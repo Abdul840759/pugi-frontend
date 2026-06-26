@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/context/AuthContext';
 import { api } from '@/services/api';
@@ -82,6 +82,12 @@ const levelInfo = {
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (_user?.onboardingComplete) {
+      navigate('/learner/dashboard', { replace: true });
+    }
+  }, [_user]);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<'beginner' | 'intermediate' | 'advanced' | null>(null);
