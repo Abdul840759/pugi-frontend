@@ -122,7 +122,7 @@ export function RegisterPage() {
                 ⚡ Fastest way in
               </span>
             </div>
-            
+            <a
               href={googleUrl}
               className="google-btn w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white dark:bg-gray-700 border-2 border-blue-400 dark:border-blue-500 text-gray-800 dark:text-white font-semibold text-base"
             >
