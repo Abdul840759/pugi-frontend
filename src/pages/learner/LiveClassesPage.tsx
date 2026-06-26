@@ -56,7 +56,7 @@ export function LiveClassesPage() {
                   <span className="flex items-center gap-1 text-xs text-gray-500">
                     <Users size={11} /> {cls.students || 0} joined
                   </span>
-                  
+                    <a
                     href={cls.meetLink}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -102,7 +102,7 @@ export function LiveClassesPage() {
                     <Clock size={12} /> {cls.time} {cls.duration && `· ${cls.duration}`}
                   </div>
                 </div>
-                
+                  <a
                   href={cls.meetLink}
                   target="_blank"
                   rel="noopener noreferrer"
