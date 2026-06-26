@@ -37,7 +37,7 @@ export function GoogleSuccessPage() {
     storage.setUser(user);
     updateUser(user);
     // Redirect to onboarding if learner hasn't completed it
-    if (role === 'learner' && !params.get('onboardingComplete')) {
+    if (role === 'learner' && params.get('onboardingComplete') !== 'true') {
       navigate('/onboarding', { replace: true });
     } else {
       navigate(ROLE_PATH[role] || '/learner/dashboard', { replace: true });
