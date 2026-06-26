@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
@@ -15,9 +16,10 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   accentColor?: string;
+  footer?: ReactNode;
 }
 
-export function Sidebar({ items, isOpen, onClose, accentColor = 'bg-primary-600' }: SidebarProps) {
+export function Sidebar({ items, isOpen, onClose, accentColor = 'bg-primary-600', footer }: SidebarProps) {
   return (
     <>
       {isOpen && (
@@ -62,6 +64,11 @@ export function Sidebar({ items, isOpen, onClose, accentColor = 'bg-primary-600'
             </NavLink>
           ))}
         </nav>
+        {footer && (
+          <div className="border-t border-slate-200 p-4 dark:border-slate-700">
+            {footer}
+          </div>
+        )}
       </aside>
     </>
   );

@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authService } from '@/services/authService';
-import { planService } from '@/services/planService';
 import { storage } from '@/utils/storage';
 
 export interface AuthUser {
@@ -11,10 +10,6 @@ export interface AuthUser {
   avatar?: string;
   techLevel?: 'beginner' | 'intermediate' | 'advanced';
   onboardingComplete?: boolean;
-  plan?: 'free' | 'pro';
-  planActivatedAt?: string;
-  planExpiresAt?: string;
-  skillLevel?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 interface AuthContextType {
@@ -26,7 +21,6 @@ interface AuthContextType {
   verifyEmail: (email: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<AuthUser>) => void;
-  refreshPlan: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -34,15 +28,6 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const attachPlan = async (baseUser: AuthUser): Promise<AuthUser> => {
-    try {
-      const planInfo = await planService.getMyPlan();
-      return { ...baseUser, ...planInfo };
-    } catch {
-      return baseUser;
-    }
-  };
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -52,9 +37,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (token && storedUser) {
         setUser(storedUser);
-        const withPlan = await attachPlan(storedUser);
-        storage.setUser(withPlan);
-        setUser(withPlan);
       }
 
       if (!token && refreshToken) {
@@ -62,9 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const data = await authService.refreshToken(refreshToken);
           storage.setAccessToken(data.accessToken);
           const me = await authService.me();
-          const withPlan = await attachPlan(me);
-          storage.setUser(withPlan);
-          setUser(withPlan);
+          storage.setUser(me);
+          setUser(me);
         } catch {
           storage.clearAuth();
           setUser(null);
@@ -82,10 +63,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     storage.setAccessToken(data.accessToken);
     storage.setRefreshToken(data.refreshToken);
     const fullUser = await authService.me();
-    const withPlan = await attachPlan(fullUser);
-    storage.setUser(withPlan);
-        setUser(withPlan);
-    setUser(withPlan);
+    storage.setUser(fullUser);
+    setUser(fullUser);
   };
 
   const register = async (
@@ -103,10 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     storage.setAccessToken(data.accessToken);
     storage.setRefreshToken(data.refreshToken);
     const fullUser = await authService.me();
-    const withPlan = await attachPlan(fullUser);
-    storage.setUser(withPlan);
-        setUser(withPlan);
-    setUser(withPlan);
+    storage.setUser(fullUser);
+    setUser(fullUser);
   };
 
   const logout = async () => {
@@ -122,14 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     storage.setUser(updated);
   };
 
-  const refreshPlan = async () => {
-    if (!user) return;
-    const planInfo = await planService.getMyPlan();
-    const updated = { ...user, ...planInfo };
-    setUser(updated);
-    storage.setUser(updated);
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -141,7 +110,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         verifyEmail,
         logout,
         updateUser,
-        refreshPlan,
       }}
     >
       {children}
