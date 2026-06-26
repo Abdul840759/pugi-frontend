@@ -1,9 +1,6 @@
-import { useState } from 'react';
-import { Lock, Sparkles, ArrowUpCircle, Loader2 } from 'lucide-react';
+import { Lock, Sparkles, ArrowUpCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
-import { paymentService } from '@/services/paymentService';
-import { loadPaystackScript } from '@/utils/loadPaystackScript';
-import { useToast } from '@/hooks/useToast';
 
 export type UpgradeLimitReason = 'FREE_PLAN_LIMIT' | 'LEVEL_MISMATCH' | 'UPGRADE_PROMPT';
 
@@ -29,56 +26,16 @@ const REASON_COPY: Record<UpgradeLimitReason, { title: string; body: string }> =
   },
 };
 
-const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ?? '';
-
-export function UpgradeLimitModal({ isOpen, onClose, reason, onUpgraded }: UpgradeLimitModalProps) {
-  const { showToast } = useToast();
-  const [loading, setLoading] = useState(false);
+export function UpgradeLimitModal({ isOpen, onClose, reason }: UpgradeLimitModalProps) {
+  const navigate = useNavigate();
 
   if (!reason) return null;
 
   const copy = REASON_COPY[reason];
 
-  const verifyPayment = async (reference: string) => {
-    try {
-      await paymentService.verify(reference);
-      showToast('Welcome to PUGI Pro! 🎉', 'success');
-      onUpgraded?.();
-      onClose();
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Could not verify payment', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpgrade = async () => {
-    if (!PAYSTACK_PUBLIC_KEY) {
-      showToast('Payment is not configured yet. Please try again later.', 'error');
-      return;
-    }
-    setLoading(true);
-    try {
-      const { reference, amount, email } = await paymentService.initialize();
-      await loadPaystackScript();
-      const handler = (window as any).PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email,
-        amount,
-        currency: 'NGN',
-        ref: reference,
-        callback: (response: any) => {
-          void verifyPayment(response.reference);
-        },
-        onClose: () => {
-          setLoading(false);
-        },
-      });
-      handler.openIframe();
-    } catch (err: any) {
-      setLoading(false);
-      showToast(err?.response?.data?.message || 'Could not start payment', 'error');
-    }
+  const handleUpgrade = () => {
+    onClose();
+    navigate('/upgrade');
   };
 
   return (
@@ -102,18 +59,16 @@ export function UpgradeLimitModal({ isOpen, onClose, reason, onUpgraded }: Upgra
         <div className="flex w-full gap-3 mt-1">
           <button
             onClick={onClose}
-            disabled={loading}
-            className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             Maybe later
           </button>
           <button
             onClick={handleUpgrade}
-            disabled={loading}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 py-2 text-sm font-medium text-white transition-colors"
           >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <ArrowUpCircle size={15} />}
-            {loading ? 'Processing...' : 'Upgrade to PUGI Pro'}
+            <ArrowUpCircle size={15} />
+            Upgrade to PUGI Pro
           </button>
         </div>
       </div>
