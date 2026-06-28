@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, Filter, Play, Users, Star, Code, Server, Terminal, Palette,
-  GitBranch, Database, Smartphone, Brain, Shield, Cloud, Link2, Gamepad2, Lock,, BookOpen, Sprout, Zap, Rocket} from 'lucide-react';
+  GitBranch, Database, Smartphone, Brain, Shield, Cloud, Link2, Gamepad2, Lock, BookOpen, Sprout, Zap, Rocket} from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { useToast } from '@/hooks/useToast';
 import { useAuthContext } from '@/context/AuthContext';
