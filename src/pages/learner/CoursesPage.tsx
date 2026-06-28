@@ -207,7 +207,7 @@ export function LearnerCoursesPage() {
                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
               >
-                <span>{l.emoji}</span>
+                <l.icon className="w-4 h-4" />
                 <span>{l.label}</span>
               </button>
             ))}
