@@ -96,7 +96,7 @@ export function LoginPage() {
           <div className="mb-6">
             <div className="flex items-center justify-center mb-3">
               <span className="recommended-badge inline-flex items-center gap-1 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                ⚡ Fastest way in
+                <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Fastest way in</span>
               </span>
             </div>
             <a
