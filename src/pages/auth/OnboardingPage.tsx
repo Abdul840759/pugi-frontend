@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { Sprout, Zap, Rocket } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/context/AuthContext';
 import { api } from '@/services/api';
@@ -55,7 +56,7 @@ const getLevel = (score: number): 'beginner' | 'intermediate' | 'advanced' => {
 
 const levelInfo = {
   beginner: {
-    emoji: '🌱',
+    icon: 'Sprout',
     title: 'Beginner',
     desc: 'You are just getting started — perfect! We will guide you from the ground up.',
     color: 'text-green-600',
@@ -63,7 +64,7 @@ const levelInfo = {
     border: 'border-green-200 dark:border-green-800',
   },
   intermediate: {
-    emoji: '⚡',
+    icon: 'Zap',
     title: 'Intermediate',
     desc: 'You know the basics — time to level up with deeper concepts and real projects.',
     color: 'text-blue-600',
@@ -71,7 +72,7 @@ const levelInfo = {
     border: 'border-blue-200 dark:border-blue-800',
   },
   advanced: {
-    emoji: '🚀',
+    icon: 'Rocket',
     title: 'Advanced',
     desc: 'You are already building things — we will sharpen your skills to the next level.',
     color: 'text-purple-600',
@@ -183,7 +184,7 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <div className={`bg-white dark:bg-gray-900 rounded-2xl shadow-sm border ${levelInfo[result].border} p-8 text-center`}>
-            <div className="text-6xl mb-4">{levelInfo[result].emoji}</div>
+            {(() => { const Icon = ({ Sprout, Zap, Rocket } as Record<string, React.ElementType>)[levelInfo[result].icon]; return <div className="flex justify-center mb-4"><Icon className="w-16 h-16" /></div>; })()}
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               You are <span className={levelInfo[result].color}>{levelInfo[result].title}</span>
             </h2>
