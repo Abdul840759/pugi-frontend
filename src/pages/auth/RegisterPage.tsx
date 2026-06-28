@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Zap } from 'lucide-react';
 import { useAuthContext } from '@/context/AuthContext';
+import { authService } from '@/services/authService';
 import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +32,8 @@ export function RegisterPage() {
   const [otp, setOtp]           = useState('');
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
 
   const ROLE_PATH: Record<string, string> = {
     learner: '/learner/dashboard',
@@ -48,10 +51,31 @@ export function RegisterPage() {
       await register(name, email, password, role);
       showToast('Verification code sent to your email!', 'success');
       setStep('verify');
+      setResendCooldown(15);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    setResending(true);
+    setError('');
+    try {
+      await authService.resendOtp(email);
+      showToast('A new code has been sent to your email', 'success');
+      setResendCooldown(15);
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Could not resend code', 'error');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -115,7 +139,8 @@ export function RegisterPage() {
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
 
-          {/* Google Button — always hero */}
+          {/* Google Button — only on register step */}
+          {step === 'register' && (
           <div className="mb-6">
             <div className="flex items-center justify-center mb-3">
               <span className="recommended-badge inline-flex items-center gap-1 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -130,8 +155,9 @@ export function RegisterPage() {
               Continue with Google
             </a>
           </div>
+          )}
 
-          {/* Divider */}
+          {step === 'register' && (
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200 dark:border-gray-600" />
@@ -140,6 +166,7 @@ export function RegisterPage() {
               <span className="bg-white dark:bg-gray-800 px-2 text-gray-400">or register with email</span>
             </div>
           </div>
+          )}
 
           {step === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
@@ -186,6 +213,14 @@ export function RegisterPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Verifying...' : 'Verify Email'}
               </Button>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendCooldown > 0 || resending}
+                className="w-full text-sm font-medium text-blue-500 hover:text-blue-600 disabled:text-gray-400 disabled:cursor-not-allowed"
+              >
+                {resending ? 'Sending...' : resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+              </button>
               <button type="button" onClick={() => { setStep('register'); setError(''); setOtp(''); }}
                 className="w-full text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                 ← Back to registration

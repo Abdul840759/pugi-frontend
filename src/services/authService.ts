@@ -47,6 +47,11 @@ export const authService = {
     return data;
   },
 
+  async resendOtp(email: string) {
+    const { data } = await api.post('/auth/resend-otp', { email });
+    return data;
+  },
+
   async me() {
     const { data } = await api.get('/auth/me');
     return data;
