@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CheckCircle, Circle, Volume2, VolumeX, BookOpen,
   Award, Download, Bookmark, BookmarkCheck, Trophy, XCircle, StickyNote,
-  Copy, Check, Play, Terminal, Menu, X, Brain, PlayCircle, Lock,
+  Copy, Check, Play, Terminal, Menu, X, Search, Brain, PlayCircle, Lock,
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { progressService } from '@/services/progressService';
