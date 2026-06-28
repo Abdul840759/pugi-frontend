@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trophy, Flame, Star } from 'lucide-react';
+import { Trophy, Flame, Star, Medal } from 'lucide-react';
 import { Loader } from '@/components/ui/Loader';
 import { useAuthContext } from '@/context/AuthContext';
 
@@ -32,9 +32,9 @@ export function LeaderboardPage() {
   };
 
   const rankIcon = (rank: number) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
+    if (rank === 1) return <Medal size={18} className="text-yellow-500" />;
+    if (rank === 2) return <Medal size={18} className="text-gray-400" />;
+    if (rank === 3) return <Medal size={18} className="text-amber-600" />;
     return rank;
   };
 
@@ -59,7 +59,7 @@ export function LeaderboardPage() {
           </div>
           <div className="flex-1">
             <p className="font-semibold text-blue-900 dark:text-blue-100">Your Ranking</p>
-            <p className="text-sm text-blue-600 dark:text-blue-400">{myRank.xp} XP · Level {myRank.level} · {myRank.streak} day streak 🔥</p>
+            <p className="text-sm text-blue-600 dark:text-blue-400">{myRank.xp} XP · Level {myRank.level} · <span className="inline-flex items-center gap-0.5">{myRank.streak} day streak <Flame size={12} className="text-orange-500" /></span></p>
           </div>
           <Star size={20} className="text-blue-500" />
         </div>
@@ -76,7 +76,7 @@ export function LeaderboardPage() {
             <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full px-1">{board[1]?.name}</p>
             <p className="text-xs text-gray-500">{board[1]?.xp} XP</p>
             <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-t-lg mt-2 h-16 flex items-center justify-center">
-              <span className="text-2xl">🥈</span>
+              <Medal size={28} className="text-gray-400" />
             </div>
           </div>
 
@@ -88,7 +88,7 @@ export function LeaderboardPage() {
             <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full px-1">{board[0]?.name}</p>
             <p className="text-xs text-yellow-600 font-bold">{board[0]?.xp} XP</p>
             <div className="w-full bg-yellow-400 rounded-t-lg mt-2 h-24 flex items-center justify-center">
-              <span className="text-3xl">🥇</span>
+              <Medal size={32} className="text-yellow-700" />
             </div>
           </div>
 
@@ -100,7 +100,7 @@ export function LeaderboardPage() {
             <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 text-center truncate w-full px-1">{board[2]?.name}</p>
             <p className="text-xs text-gray-500">{board[2]?.xp} XP</p>
             <div className="w-full bg-amber-600 rounded-t-lg mt-2 h-10 flex items-center justify-center">
-              <span className="text-2xl">🥉</span>
+              <Medal size={28} className="text-amber-900" />
             </div>
           </div>
         </div>

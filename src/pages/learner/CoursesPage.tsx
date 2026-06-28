@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, Filter, Play, Users, Star, Code, Server, Terminal, Palette,
-  GitBranch, Database, Smartphone, Brain, Shield, Cloud, Link2, Gamepad2, Lock,
-} from 'lucide-react';
+  GitBranch, Database, Smartphone, Brain, Shield, Cloud, Link2, Gamepad2, Lock,, BookOpen, Sprout, Zap, Rocket} from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { useToast } from '@/hooks/useToast';
 import { useAuthContext } from '@/context/AuthContext';
@@ -186,10 +185,10 @@ export function LearnerCoursesPage() {
         {/* Level Sidebar */}
         <div className="hidden md:flex flex-col gap-2 w-44 shrink-0">
           {[
-            { key: 'all', emoji: '📚', label: 'All Levels' },
-            { key: 'beginner', emoji: '🌱', label: 'Beginner' },
-            { key: 'intermediate', emoji: '⚡', label: 'Intermediate' },
-            { key: 'advanced', emoji: '🚀', label: 'Advanced' },
+            { key: 'all', icon: BookOpen, label: 'All Levels' },
+            { key: 'beginner', icon: Sprout, label: 'Beginner' },
+            { key: 'intermediate', icon: Zap, label: 'Intermediate' },
+            { key: 'advanced', icon: Rocket, label: 'Advanced' },
           ]
             .filter(l => {
               if (l.key === 'all') return true;

@@ -262,6 +262,7 @@ export function CourseDetailPage() {
   const [nextCourseId, setNextCourseId] = useState<string | null>(null);
   const [nextCourse, setNextCourse] = useState<any>(null);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
+  const [lessonSearch, setLessonSearch] = useState('');
   const [noteText, setNoteText] = useState('');
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [aiQuiz, setAiQuiz] = useState<any>(null);
@@ -727,6 +728,28 @@ export function CourseDetailPage() {
         }
         return <CodeBlock key={i} code={code} lang={firstLine} />;
       }
+      // Check for callout blocks
+      if (part.includes('__CALLOUT_')) {
+        const calloutMatch = part.match(/__CALLOUT_(\w+)__([\s\S]*?)__ENDCALLOUT__/);
+        if (calloutMatch) {
+          const type = calloutMatch[1].toLowerCase();
+          const body = calloutMatch[2].trim();
+          const styles: Record<string, { bg: string; border: string; icon: string; label: string }> = {
+            tip:     { bg: 'bg-green-50 dark:bg-green-900/20',  border: 'border-green-400', icon: '💡', label: 'Tip' },
+            warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-400', icon: '⚠️', label: 'Warning' },
+            note:    { bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'border-blue-400',   icon: '📝', label: 'Note' },
+            example: { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-400', icon: '📌', label: 'Example' },
+            danger:  { bg: 'bg-red-50 dark:bg-red-900/20',      border: 'border-red-400',    icon: '🚫', label: 'Danger' },
+          };
+          const s = styles[type] || styles.note;
+          return (
+            <div key={i} className={`my-4 rounded-xl border-l-4 ${s.border} ${s.bg} p-4`}>
+              <p className="font-semibold text-sm mb-1">{s.icon} {s.label}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{body}</p>
+            </div>
+          );
+        }
+      }
       return (
         <div key={i}>
           {part.split("\n").map((line, j) => {
@@ -818,8 +841,26 @@ export function CourseDetailPage() {
             <ProgressBar value={progress} max={100} />
           </div>
         </div>
+        {/* Lesson Search */}
+        <div className="px-3 pb-2 pt-1 border-b border-gray-200 dark:border-gray-700">
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search lessons..."
+              value={lessonSearch}
+              onChange={e => setLessonSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto p-2">
-          {course.modules.map((mod: any, modIdx: number) => (
+          {course.modules.map((mod: any, modIdx: number) => {
+            const filteredLessons = mod.lessons.filter((l: any) =>
+              !lessonSearch || l.title.toLowerCase().includes(lessonSearch.toLowerCase())
+            );
+            if (lessonSearch && filteredLessons.length === 0) return null;
+            return (
             <div key={modIdx} className="mb-2">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-2 py-1">
                 {mod.title}
@@ -849,7 +890,8 @@ export function CourseDetailPage() {
                 );
               })}
             </div>
-          ))}
+          );
+          })}
         </div>
       </aside>
       {/* Main content */}

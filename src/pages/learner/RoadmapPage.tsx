@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, Lock, ChevronRight, Code, Server, Brain, Cloud } from 'lucide-react';
+import { CheckCircle, CheckCircle2, Lock, ChevronRight, Code, Server, Brain, Cloud } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 
 const PATHS = [
@@ -193,8 +193,8 @@ export function RoadmapPage() {
                         }`}>
                           Step {idx + 1}
                         </span>
-                        {status.done && <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓ Completed</span>}
-                        {status.locked && <span className="text-xs text-gray-400">🔒 Locked</span>}
+                        {status.done && <span className="text-xs text-green-600 dark:text-green-400 font-medium inline-flex items-center gap-1"><CheckCircle2 size={12} /> Completed</span>}
+                        {status.locked && <span className="text-xs text-gray-400 inline-flex items-center gap-1"><Lock size={11} /> Locked</span>}
                       </div>
                       <p className={`font-semibold ${status.locked ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                         {step.title}
