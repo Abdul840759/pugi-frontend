@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CheckCircle, Circle, Volume2, VolumeX, BookOpen,
   Award, Download, Bookmark, BookmarkCheck, Trophy, XCircle, StickyNote,
   Copy, Check, Play, Terminal, Menu, X, Search, Brain, PlayCircle, Lock,
+  Lightbulb, TriangleAlert, NotebookPen, Pin, Ban,
 } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { progressService } from '@/services/progressService';
@@ -734,17 +735,18 @@ export function CourseDetailPage() {
         if (calloutMatch) {
           const type = calloutMatch[1].toLowerCase();
           const body = calloutMatch[2].trim();
-          const styles: Record<string, { bg: string; border: string; icon: string; label: string }> = {
-            tip:     { bg: 'bg-green-50 dark:bg-green-900/20',  border: 'border-green-400', icon: '💡', label: 'Tip' },
-            warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-400', icon: '⚠️', label: 'Warning' },
-            note:    { bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'border-blue-400',   icon: '📝', label: 'Note' },
-            example: { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-400', icon: '📌', label: 'Example' },
-            danger:  { bg: 'bg-red-50 dark:bg-red-900/20',      border: 'border-red-400',    icon: '🚫', label: 'Danger' },
+          const styles: Record<string, { bg: string; border: string; iconName: string; label: string }> = {
+            tip:     { bg: 'bg-green-50 dark:bg-green-900/20',  border: 'border-green-400', iconName: 'Lightbulb', label: 'Tip' },
+            warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-400', iconName: 'TriangleAlert', label: 'Warning' },
+            note:    { bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'border-blue-400',   iconName: 'NotebookPen', label: 'Note' },
+            example: { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-400', iconName: 'Pin', label: 'Example' },
+            danger:  { bg: 'bg-red-50 dark:bg-red-900/20',      border: 'border-red-400',    iconName: 'Ban', label: 'Danger' },
           };
           const s = styles[type] || styles.note;
+          const CalloutIcon = ({ Lightbulb, TriangleAlert, NotebookPen, Pin, Ban } as Record<string, React.ElementType>)[s.iconName];
           return (
             <div key={i} className={`my-4 rounded-xl border-l-4 ${s.border} ${s.bg} p-4`}>
-              <p className="font-semibold text-sm mb-1">{s.icon} {s.label}</p>
+              <p className="font-semibold text-sm mb-1 flex items-center gap-1"><CalloutIcon className="w-4 h-4" /> {s.label}</p>
               <p className="text-sm text-gray-700 dark:text-gray-300">{body}</p>
             </div>
           );
