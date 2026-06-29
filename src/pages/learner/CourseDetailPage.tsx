@@ -1094,16 +1094,21 @@ export function CourseDetailPage() {
                 <Brain size={16} className="text-purple-500" /> AI Quiz
               </h3>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-500 dark:text-gray-400">Questions:</label>
-                  <input
-                    type="number"
-                    min={5}
-                    max={20}
-                    value={aiQuizCount}
-                    onChange={e => setAiQuizCount(Math.max(5, Math.min(20, Number(e.target.value))))}
-                    className="w-14 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent px-2 py-1 text-xs text-center text-gray-900 dark:text-white"
-                  />
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Questions:</label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={20}
+                      value={aiQuizCount}
+                      onChange={e => setAiQuizCount(Number(e.target.value))}
+                      onBlur={e => setAiQuizCount(Math.max(5, Math.min(20, Number(e.target.value) || 5)))}
+                      className={`w-14 rounded-lg border bg-transparent px-2 py-1 text-xs text-center text-gray-900 dark:text-white ${aiQuizCount > 20 || aiQuizCount < 5 ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
+                    />
+                  </div>
+                  {aiQuizCount > 20 && <p className="text-xs text-red-500">Max is 20</p>}
+                  {aiQuizCount < 5 && aiQuizCount > 0 && <p className="text-xs text-red-500">Min is 5</p>}
                 </div>
                 <button
                   onClick={generateAIQuiz}
