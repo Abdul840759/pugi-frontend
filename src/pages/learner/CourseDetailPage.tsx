@@ -456,8 +456,8 @@ export function CourseDetailPage() {
     setYtLoading(true);
     setYtVideo(null);
     try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(currentLesson.title || 'programming tutorial')}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+      const res = await fetch(`https://pugi-backend.onrender.com/api/youtube/search?q=${encodeURIComponent(currentLesson.title || 'programming tutorial')}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('pugi_access_token')}` }
       });
       const data = await res.json();
       if (!res.ok || !data.videoId) {
