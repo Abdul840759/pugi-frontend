@@ -106,7 +106,9 @@ export function LearnerDashboardPage() {
 
   if (loading) return <div className="flex justify-center items-center h-64"><Loader /></div>;
 
-  const inProgress = enrollments.filter((e) => e.progress > 0 && e.progress < 100);
+  const inProgress = enrollments
+    .filter((e) => e.progress < 100 && e.lastAccessed)
+    .sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
   const completed = enrollments.filter((e) => e.progress === 100);
 
   return (
