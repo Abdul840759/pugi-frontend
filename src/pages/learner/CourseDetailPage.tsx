@@ -290,8 +290,26 @@ export function CourseDetailPage() {
           progressService.getCourseProgress(id!),
         ]);
         setCourse(courseData);
-        setCompletedLessons(new Set(progressData.completedLessons || []));
+        const completed = new Set<string>(progressData.completedLessons || []);
+        setCompletedLessons(completed);
         setProgress(progressData.progress || 0);
+        // Auto-resume: jump to first incomplete lesson
+        if (courseData?.modules) {
+          let found = false;
+          for (let modIdx = 0; modIdx < courseData.modules.length; modIdx++) {
+            const mod = courseData.modules[modIdx];
+            for (let lesIdx = 0; lesIdx < mod.lessons.length; lesIdx++) {
+              const lId = mod.lessons[lesIdx]._id || String(lesIdx);
+              if (!completed.has(lId)) {
+                setActiveModule(modIdx);
+                setActiveLesson(lesIdx);
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+        }
         // Check enrollment
         try {
           const enrolledCourses = await courseService.getEnrolledCourses();
@@ -442,6 +460,10 @@ export function CourseDetailPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
       });
       const data = await res.json();
+      if (!res.ok || !data.videoId) {
+        showToast(data.message || 'No video found for this lesson', 'error');
+        return;
+      }
       setYtVideo(data);
     } catch {
       showToast('Could not find a video', 'error');
